@@ -372,11 +372,9 @@
 </style>
 </head>
 <body>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<div id="boot-loading" style="position:fixed;inset:0;background:#FBF8F3;display:flex;align-items:center;justify-content:center;font-family:Georgia,'Times New Roman',serif;font-size:15px;color:#2B2A26;z-index:9999;">Loading…</div>
 <div id="reset-warning-badge"></div>
 <div id="toast-container"></div>
-<div id="login-screen" style="display:none;">
+<div id="login-screen">
   <div class="login-card">
     <img class="login-logo" id="login-logo" src="" alt="RK Alpine logo"/>
     <div class="login-title" id="login-title-name"></div>
@@ -670,88 +668,15 @@ const defaultCompany = {
   pan: "129956855",
 };
 
-// ---------- Supabase ----------
-const supabase = window.supabase.createClient(
-  "https://yoicarhenxoxymxgylly.supabase.co",
-  "sb_publishable_BObJEb08xJqeg17sgQ6Bjw_eX2FJToD"
-);
+function loadInvoices() {
+  try { const v = localStorage.getItem("rkalpine_invoices"); return v ? JSON.parse(v) : []; } catch (e) { return []; }
+}
+function persistInvoices() { try { localStorage.setItem("rkalpine_invoices", JSON.stringify(state.invoices)); } catch (e) { console.error(e); } }
 
-// -- mapping helpers: local camelCase state <-> Supabase snake_case rows --
-function invoiceRowToLocal(row, items) {
-  return {
-    id: row.id, number: row.number, date: row.date, dueDate: row.due_date || "",
-    clientName: row.client_name || "", clientPhone: row.client_phone || "",
-    clientAddress: row.client_address || "", clientPan: row.client_pan || "",
-    items: (items || []).sort((a, b) => (a.position || 0) - (b.position || 0)).map(it => ({
-      id: it.id, desc: it.description || "", qty: it.qty, unit: it.unit || "", rate: it.rate,
-    })),
-    shippingEnabled: row.shipping_enabled, shippingCharge: row.shipping_charge,
-    discountType: row.discount_type, discountValue: row.discount_value,
-    notes: row.notes || "", status: row.status, amountPaid: row.amount_paid,
-    issuedBy: row.issued_by || "", deletedAt: row.deleted_at || null,
-  };
+function loadDeletedInvoices() {
+  try { const v = localStorage.getItem("rkalpine_deleted_invoices"); return v ? JSON.parse(v) : []; } catch (e) { return []; }
 }
-function invoiceLocalToRow(inv) {
-  return {
-    id: inv.id, number: inv.number, date: inv.date || null, due_date: inv.dueDate || null,
-    client_name: inv.clientName || "", client_phone: inv.clientPhone || "",
-    client_address: inv.clientAddress || "", client_pan: inv.clientPan || "",
-    shipping_enabled: !!inv.shippingEnabled, shipping_charge: Number(inv.shippingCharge) || 0,
-    discount_type: inv.discountType || "none", discount_value: Number(inv.discountValue) || 0,
-    notes: inv.notes || "", status: inv.status || "unpaid", amount_paid: Number(inv.amountPaid) || 0,
-    deleted_at: inv.deletedAt || null,
-  };
-}
-function invoiceItemsLocalToRows(inv) {
-  return (inv.items || []).map((it, idx) => ({
-    id: it.id, invoice_id: inv.id, position: idx, description: it.desc || "",
-    qty: Number(it.qty) || 0, unit: it.unit || "", rate: Number(it.rate) || 0,
-  }));
-}
-// Push one invoice (+ its items) to Supabase. Items are fully replaced each save
-// (delete-then-insert) since the local model doesn't track item-level diffs.
-async function syncInvoiceToSupabase(inv) {
-  try {
-    const { error: e1 } = await supabase.from("invoices").upsert(invoiceLocalToRow(inv));
-    if (e1) { console.error(e1); return; }
-    const { error: e2 } = await supabase.from("invoice_items").delete().eq("invoice_id", inv.id);
-    if (e2) console.error(e2);
-    const rows = invoiceItemsLocalToRows(inv);
-    if (rows.length) {
-      const { error: e3 } = await supabase.from("invoice_items").insert(rows);
-      if (e3) console.error(e3);
-    }
-  } catch (e) { console.error(e); }
-}
-async function deleteInvoiceRowFromSupabase(id) {
-  try {
-    await supabase.from("invoice_items").delete().eq("invoice_id", id);
-    const { error } = await supabase.from("invoices").delete().eq("id", id);
-    if (error) console.error(error);
-  } catch (e) { console.error(e); }
-}
-
-async function fetchAllInvoiceRows() {
-  const { data, error } = await supabase.from("invoices").select("*, invoice_items(*)");
-  if (error) { console.error(error); return []; }
-  return data.map(row => invoiceRowToLocal(row, row.invoice_items));
-}
-function loadInvoices() { return []; } // populated at boot by fetchAllInvoiceRows()
-function persistInvoices() {
-  // Reconcile: push every active invoice's current state to Supabase.
-  state.invoices.forEach(inv => { syncInvoiceToSupabase(inv); });
-}
-
-function loadDeletedInvoices() { return []; } // populated at boot by fetchAllInvoiceRows()
-function persistDeletedInvoices() {
-  // Deleted invoices are represented by deleted_at on the invoices row itself.
-  // Freshly-deleted invoices are pushed with deleted_at set; any invoice no longer
-  // present in state.deletedInvoices was restored or purged and is handled elsewhere.
-  state.deletedInvoices.forEach(rec => {
-    const inv = Object.assign({}, rec.invoice, { deletedAt: rec.deletedAt });
-    syncInvoiceToSupabase(inv);
-  });
-}
+function persistDeletedInvoices() { try { localStorage.setItem("rkalpine_deleted_invoices", JSON.stringify(state.deletedInvoices)); } catch (e) { console.error(e); } }
 
 // Invoice numbering: this counter only ever goes up, even across deletions, so a number
 // is never reused. If an invoice is deleted, the gap it leaves in the sequence is the
@@ -778,28 +703,10 @@ function consumeInvoiceNumber() {
   persistInvoiceSeq();
   return n;
 }
-function companyRowToLocal(row) {
-  if (!row) return Object.assign({}, defaultCompany);
-  return {
-    name: row.name || defaultCompany.name, nameNe: row.name_ne || "",
-    address: row.address || "", addressNe: row.address_ne || "",
-    phone: row.phone || "", email: row.email || "", pan: row.pan || "",
-  };
+function loadCompany() {
+  try { const v = localStorage.getItem("rkalpine_company"); return v ? Object.assign({}, defaultCompany, JSON.parse(v)) : Object.assign({}, defaultCompany); } catch (e) { return Object.assign({}, defaultCompany); }
 }
-async function fetchCompanyRow() {
-  const { data, error } = await supabase.from("company").select("*").eq("id", 1).maybeSingle();
-  if (error) { console.error(error); return null; }
-  return data;
-}
-function loadCompany() { return Object.assign({}, defaultCompany); } // replaced at boot by fetchCompanyRow()
-function persistCompany() {
-  const row = Object.assign({ id: 1 }, {
-    name: state.company.name || "", name_ne: state.company.nameNe || "",
-    address: state.company.address || "", address_ne: state.company.addressNe || "",
-    phone: state.company.phone || "", email: state.company.email || "", pan: state.company.pan || "",
-  });
-  supabase.from("company").upsert(row).then(({ error }) => { if (error) console.error(error); });
-}
+function persistCompany() { try { localStorage.setItem("rkalpine_company", JSON.stringify(state.company)); } catch (e) { console.error(e); } }
 
 // ---------- Item catalog (photo + description, reusable across invoices) ----------
 function defaultCatalogItems() {
@@ -816,49 +723,18 @@ function defaultCatalogItems() {
     { id: uid(), name: "Pure Cow Ghee", nameNe: "गाईको घिउ", unit: "kg", unitNe: "कि.ग्रा.", rate: 1600, photo: "", description: "Farm-made pure ghee" },
   ];
 }
-function catalogRowToLocal(row) {
-  return {
-    id: row.id, name: row.name || "", nameNe: row.name_ne || "", unit: row.unit || "",
-    unitNe: row.unit_ne || "", rate: row.rate, photo: row.photo || "", description: row.description || "",
-  };
+function loadCatalogItems() {
+  try {
+    const raw = localStorage.getItem("rkalpine_catalog_items");
+    if (raw === null) {
+      const seeded = defaultCatalogItems();
+      try { localStorage.setItem("rkalpine_catalog_items", JSON.stringify(seeded)); } catch (e2) { console.error(e2); }
+      return seeded;
+    }
+    return JSON.parse(raw);
+  } catch (e) { return defaultCatalogItems(); }
 }
-function catalogLocalToRow(it) {
-  return {
-    id: it.id, name: it.name || "", name_ne: it.nameNe || "", unit: it.unit || "",
-    unit_ne: it.unitNe || "", rate: Number(it.rate) || 0, photo: it.photo || "", description: it.description || "",
-  };
-}
-async function fetchCatalogRows() {
-  const { data, error } = await supabase.from("catalog_items").select("*");
-  if (error) { console.error(error); return null; }
-  return data;
-}
-function loadCatalogItems() { return []; } // populated at boot by fetchCatalogRows()
-async function seedCatalogItemsToSupabase() {
-  const seeded = defaultCatalogItems();
-  const { error } = await supabase.from("catalog_items").insert(seeded.map(catalogLocalToRow));
-  if (error) { console.error(error); return []; }
-  return seeded;
-}
-function persistCatalogItems() {
-  // Reconcile: replace the full catalog_items table with the current local list.
-  (async () => {
-    try {
-      const { data: existing, error: e1 } = await supabase.from("catalog_items").select("id");
-      if (e1) { console.error(e1); return; }
-      const currentIds = new Set(state.catalogItems.map(it => it.id));
-      const toDelete = (existing || []).filter(r => !currentIds.has(r.id)).map(r => r.id);
-      if (toDelete.length) {
-        const { error: e2 } = await supabase.from("catalog_items").delete().in("id", toDelete);
-        if (e2) console.error(e2);
-      }
-      if (state.catalogItems.length) {
-        const { error: e3 } = await supabase.from("catalog_items").upsert(state.catalogItems.map(catalogLocalToRow));
-        if (e3) console.error(e3);
-      }
-    } catch (e) { console.error(e); }
-  })();
-}
+function persistCatalogItems() { try { localStorage.setItem("rkalpine_catalog_items", JSON.stringify(state.catalogItems)); } catch (e) { console.error(e); } }
 function newBlankCatalogItem() { return { id: uid(), name: "", nameNe: "", unit: "", unitNe: "", rate: 0, photo: "", description: "" }; }
 
 function newBlankItem() { return { id: uid(), desc: "", qty: 1, unit: "", rate: 0 }; }
@@ -938,7 +814,7 @@ const state = {
   salesFrom: "",
   salesTo: "",
 };
-state.invoiceSeq = 1; // real value computed in boot() once invoices are fetched from Supabase
+state.invoiceSeq = loadInvoiceSeq();
 state.users = loadUsers();
 
 // ---------- Login gate ----------
@@ -1352,7 +1228,7 @@ function permanentlyDeleteInvoice(id) {
   if (!rec) return;
   if (!confirm("Permanently delete invoice " + rec.invoice.number + "? This cannot be undone.")) return;
   state.deletedInvoices = state.deletedInvoices.filter(d => d.invoice.id !== id);
-  deleteInvoiceRowFromSupabase(id);
+  persistDeletedInvoices();
   render();
   showToast("Invoice permanently deleted");
 }
@@ -2430,42 +2306,7 @@ function render() {
   }
 }
 
-async function boot() {
-  try {
-    const [invRows, companyRow, catalogRows] = await Promise.all([
-      fetchAllInvoiceRows(), fetchCompanyRow(), fetchCatalogRows(),
-    ]);
-
-    state.invoices = invRows.filter(i => !i.deletedAt);
-    state.deletedInvoices = invRows.filter(i => i.deletedAt).map(i => ({
-      invoice: Object.assign({}, i, { deletedAt: undefined }),
-      deletedAt: i.deletedAt,
-      deletedBy: "unknown", // not tracked in the current database schema
-    }));
-
-    state.company = companyRowToLocal(companyRow);
-    if (!companyRow) persistCompany(); // first run: seed the company row
-
-    if (catalogRows && catalogRows.length > 0) {
-      state.catalogItems = catalogRows.map(catalogRowToLocal);
-    } else if (catalogRows !== null) {
-      // fresh database, no catalog rows yet -> seed the default catalog
-      state.catalogItems = await seedCatalogItemsToSupabase();
-    } else {
-      state.catalogItems = [];
-    }
-
-    const all = [...state.invoices, ...state.deletedInvoices.map(d => d.invoice)];
-    const maxSeq = all.reduce((m, inv) => Math.max(m, parseSeqFromNumber(inv.number)), 0);
-    state.invoiceSeq = maxSeq + 1;
-  } catch (e) {
-    console.error("Boot failed, falling back to empty state:", e);
-  }
-  document.getElementById("boot-loading").style.display = "none";
-  document.getElementById("login-screen").style.display = "flex";
-  initLoginScreen();
-}
-boot();
+initLoginScreen();
 </script>
 </body>
 </html>
