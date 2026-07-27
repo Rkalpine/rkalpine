@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>RK Alpine Agro — Invoices</title>
-<link rel="icon"type="image/png"href="logo.png">
+<title>RK Alpine Agro Processing Udhyog — Invoices</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap');
   @font-face { font-family: 'system'; src: local('Arial'); }
@@ -282,8 +281,9 @@
     font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif !important;
   }
   @media print {
+    @page { size: A5; margin: 10mm; }
     .no-print { display: none !important; }
-    .invoice-doc { border: none !important; padding: 0 !important; }
+    .invoice-doc { border: none !important; padding: 0 !important; box-shadow: none !important; max-width: 100% !important; }
     body { background: #fff !important; }
   }
   @media (max-width: 700px) {
@@ -303,6 +303,30 @@
     .invoice-head { flex-direction: column; gap: 14px; }
     .invoice-tag, .invoice-num, .invoice-dates { text-align: left !important; }
     .client-figs { flex-direction: column; gap: 8px; align-items: flex-end; }
+  }
+  @media (max-width: 480px) {
+    .sidebar { padding: 10px 12px; gap: 12px; }
+    .brand { padding-bottom: 10px; }
+    .brand-name { font-size: 14px; }
+    .nav { gap: 2px; overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; scrollbar-width: none; }
+    .nav::-webkit-scrollbar { display: none; }
+    .nav-item { padding: 9px 11px; font-size: 12.5px; flex-shrink: 0; }
+    .nav-label { display: none; }
+    .topbar-title { font-size: 19px; }
+    .topbar-eyebrow { font-size: 10.5px; }
+    .main { padding: 12px; }
+    .card, .settings-card, .stat-card { padding: 14px; border-radius: 10px; }
+    .stat-value { font-size: 22px; }
+    .stat-row { gap: 10px; }
+    .btn { padding: 10px 14px; font-size: 13px; }
+    .form-footer { flex-direction: column-reverse; align-items: stretch; }
+    .form-footer .btn { width: 100%; justify-content: center; }
+    .toolbar { flex-direction: column; align-items: stretch !important; gap: 10px; }
+    .toolbar .btn { width: 100%; justify-content: center; }
+    #toast-container { left: 12px; right: 12px; bottom: 12px; }
+    .toast { width: 100%; }
+    .modal-card { padding: 20px; max-width: 100%; }
+    .empty-state { padding: 26px; max-width: 100%; }
   }
 
   /* ---- Login gate ---- */
@@ -505,12 +529,13 @@ function icon(name, size) {
   return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="' + ICON_PATHS[name] + '"/></svg>';
 }
 
-function showToast(message) {
+function showToast(message, type) {
   const container = document.getElementById("toast-container");
   if (!container) return;
+  const kind = type === "error" ? "error" : "success";
   const el = document.createElement("div");
-  el.className = "toast success";
-  el.innerHTML = icon("check", 15) + '<span>' + esc(message) + '</span>';
+  el.className = "toast " + kind;
+  el.innerHTML = icon(kind === "error" ? "alertTriangle" : "check", 15) + '<span>' + esc(message) + '</span>';
   container.appendChild(el);
   setTimeout(function () { el.remove(); }, 3000);
 }
@@ -1178,7 +1203,7 @@ async function deleteInvoice(id) {
     state.deletedInvoices.unshift({ invoice: inv, deletedAt: new Date().toISOString(), deletedBy: state.currentAdmin ? state.currentAdmin.name : "unknown" });
     render();
     showToast("Invoice deleted successfully");
-  } catch (e) { console.error(e); showToast("Couldn't delete — try again"); }
+  } catch (e) { console.error(e); showToast("Couldn't delete — try again", "error"); }
 }
 window.deleteInvoice = deleteInvoice;
 
@@ -1191,7 +1216,7 @@ async function restoreInvoice(id) {
     state.invoices.unshift(rec.invoice);
     render();
     showToast("Invoice " + rec.invoice.number + " restored");
-  } catch (e) { console.error(e); showToast("Couldn't restore — try again"); }
+  } catch (e) { console.error(e); showToast("Couldn't restore — try again", "error"); }
 }
 window.restoreInvoice = restoreInvoice;
 
@@ -1204,7 +1229,7 @@ async function permanentlyDeleteInvoice(id) {
     state.deletedInvoices = state.deletedInvoices.filter(d => d.invoice.id !== id);
     render();
     showToast("Invoice permanently deleted");
-  } catch (e) { console.error(e); showToast("Couldn't delete — try again"); }
+  } catch (e) { console.error(e); showToast("Couldn't delete — try again", "error"); }
 }
 window.permanentlyDeleteInvoice = permanentlyDeleteInvoice;
 
@@ -1385,13 +1410,22 @@ async function saveDraft() {
     if (exists) state.invoices = state.invoices.map(i => i.id === state.draft.id ? state.draft : i);
     else state.invoices.unshift(state.draft);
     state.activeId = state.draft.id;
-    state.draft = null;
-    state.page = "list";
+    if (wasNew) {
+      // Clear the invoice section and drop straight back into a fresh, blank
+      // invoice-entry area so the next bill can be raised right away.
+      state.draft = newBlankInvoice();
+      state.page = "new";
+      formError = null;
+      autofocusClientName = true;
+    } else {
+      state.draft = null;
+      state.page = "list";
+    }
     render();
     showToast(wasNew ? "Invoice created" : "Invoice updated");
   } catch (e) {
     console.error(e);
-    showToast("Couldn't save the invoice — try again");
+    showToast("Couldn't save the invoice — try again", "error");
     if (btn) { btn.disabled = false; btn.innerHTML = icon("check", 15) + " Save invoice"; }
   }
 }
@@ -1443,7 +1477,7 @@ async function saveCompanyForm() {
     showToast("Company details saved");
   } catch (e) {
     console.error(e);
-    showToast("Couldn't save — try again");
+    showToast("Couldn't save — try again", "error");
   }
 }
 window.saveCompanyForm = saveCompanyForm;
@@ -1479,7 +1513,7 @@ async function saveUsersForm() {
     showToast("Admin details saved");
   } catch (e) {
     console.error(e);
-    showToast("Couldn't save — try again");
+    showToast("Couldn't save — try again", "error");
   }
 }
 window.saveUsersForm = saveUsersForm;
@@ -1512,7 +1546,7 @@ async function confirmResetUser() {
     showToast("Reset email sent to " + a.name);
   } catch (e) {
     console.error(e);
-    showToast("Couldn't send reset email — try again");
+    showToast("Couldn't send reset email — try again", "error");
   }
   pendingResetAdminId = null;
 }
@@ -1549,8 +1583,27 @@ function confirmPrintLang(lang) {
   idoc.open();
   idoc.write(
     "<!DOCTYPE html><html lang=\"" + (lang === "ne" ? "ne" : "en") + "\"><head><meta charset=\"UTF-8\">" +
+    "<title>" + esc(inv.number || "Invoice") + "</title>" +
     "<style>" + (appStyle ? appStyle.innerHTML : "") +
-    "body{margin:0;padding:24px;background:#fff;} .invoice-doc{max-width:760px;margin:0 auto;border:none !important;padding:0 !important;}</style>" +
+    "@page { size: A5; margin: 10mm; }" +
+    "html,body{margin:0;padding:0;background:#fff;}" +
+    "body{padding:0;font-size:12px;}" +
+    ".invoice-doc{max-width:100%;width:100%;margin:0;border:none !important;padding:0 !important;box-shadow:none !important;}" +
+    ".invoice-logo{width:38px;}" +
+    ".invoice-company{font-size:15px;}" +
+    ".invoice-company-meta{font-size:10.5px;}" +
+    ".invoice-tag{font-size:20px;}" +
+    ".invoice-num{font-size:11px;}" +
+    ".invoice-dates{font-size:10.5px;}" +
+    ".bill-to-name{font-size:13px;}" +
+    ".bill-to-meta{font-size:10.5px;}" +
+    "table.doc-table th{padding:6px 7px;font-size:9.5px;}" +
+    "table.doc-table td{padding:7px 7px;font-size:11px;}" +
+    ".totals-row{font-size:11px;}" +
+    ".totals-row.bold{font-size:12.5px;}" +
+    ".doc-notes-body{font-size:10.5px;}" +
+    "@media print { html,body{-webkit-print-color-adjust:exact;print-color-adjust:exact;} }" +
+    "</style>" +
     "</head><body>" + docHtml + "</body></html>"
   );
   idoc.close();
@@ -1589,7 +1642,6 @@ function renderNav() {
   const items = [
     ["dashboard", "dashboard", "Dashboard", ["dashboard"]],
     ["file", "list", "Invoices", ["list", "new", "edit", "view"]],
-    ["table", "table", "Invoice Table", ["table"]],
     ["image", "items", "Item Catalog", ["items", "itemNew", "itemEdit"]],
     ["barChart", "sales", "Sales Review", ["sales"]],
     ["users", "clients", "Clients", ["clients"]],
@@ -1598,14 +1650,14 @@ function renderNav() {
   const nav = document.getElementById("nav");
   nav.innerHTML = items.map(([ic, pg, label, matches]) => {
     const active = matches.includes(state.page);
-    return '<button class="nav-item' + (active ? ' active' : '') + '" onclick="goto_(\'' + pg + '\')">' + icon(ic, 17) + ' ' + label + '</button>';
+    return '<button class="nav-item' + (active ? ' active' : '') + '" title="' + esc(label) + '" onclick="goto_(\'' + pg + '\')">' + icon(ic, 17) + ' <span class="nav-label">' + label + '</span></button>';
   }).join("");
 }
 
 function renderTopbar() {
   document.getElementById("topbar-company").textContent = state.company.name;
   const titles = { dashboard: "Dashboard", list: "Invoices", clients: "Clients", settings: "Settings", new: "New invoice", edit: "Edit invoice",
-    items: "Item Catalog", itemNew: "New item", itemEdit: "Edit item", sales: "Sales Review", table: "Invoice Table",
+    items: "Item Catalog", itemNew: "New item", itemEdit: "Edit item", sales: "Sales Review",
     view: (state.invoices.find(i => i.id === state.activeId) || {}).number || "Invoice" };
   document.getElementById("topbar-title").textContent = titles[state.page] || "";
 }
@@ -1618,9 +1670,12 @@ function emptyState(title, body, actionLabel, actionOnClick) {
 }
 
 function renderDashboard() {
-  const welcomeHtml = '<div style="margin-bottom:20px"><div style="font-family:Georgia,serif;font-weight:700;font-size:18px;color:var(--charcoal)">Welcome, ' + esc((state.currentAdmin || {}).name || "there") + '</div></div>';
+  const welcomeHtml = '<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:20px">' +
+    '<div><div class="topbar-eyebrow" style="margin-bottom:2px">Dashboard</div>' +
+    '<div style="font-family:Georgia,serif;font-weight:700;font-size:19px;color:var(--charcoal)">Welcome, ' + esc((state.currentAdmin || {}).name || "there") + '</div></div>' +
+    '<button class="btn btn-primary" onclick="goto_(\'new\')">' + icon("plusCircle", 16) + ' New invoice</button></div>';
   if (state.invoices.length === 0) {
-    return welcomeHtml + emptyState("No invoices yet", "Once you raise your first invoice, this page fills in with revenue, outstanding payments, and which clients matter most.", "Create your first invoice", "goto_('new')");
+    return welcomeHtml + emptyState("No invoices yet", "Once you raise your first invoice, this page fills in with revenue, outstanding payments, and which clients — and products — matter most.", "Create your first invoice", "goto_('new')");
   }
   const now = new Date();
   const thisMonthKey = now.getFullYear() + "-" + now.getMonth();
@@ -1652,6 +1707,20 @@ function renderDashboard() {
   const topClients = Object.entries(byClient).map(([name, v]) => Object.assign({ name }, v)).sort((a, b) => b.total - a.total).slice(0, 5);
   const overdue = unpaid.slice().sort((a, b) => new Date(a.date) - new Date(b.date)).slice(0, 5);
 
+  const byProduct = {};
+  state.invoices.forEach(i => {
+    (i.items || []).forEach(it => {
+      const name = (it.desc || "").trim() || "Unnamed item";
+      const qty = Number(it.qty) || 0;
+      const rev = qty * (Number(it.rate) || 0);
+      if (!byProduct[name]) byProduct[name] = { qty: 0, revenue: 0 };
+      byProduct[name].qty += qty;
+      byProduct[name].revenue += rev;
+    });
+  });
+  const topProducts = Object.entries(byProduct).map(([name, v]) => Object.assign({ name }, v))
+    .sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+
   let html = welcomeHtml + '<div style="display:flex;flex-direction:column;gap:22px">';
   html += '<div class="stat-row">';
   html += '<div class="stat-card"><div class="stat-label">Total revenue (paid)</div><div class="stat-value">' + fmt(totalRevenue) + '</div></div>';
@@ -1681,6 +1750,22 @@ function renderDashboard() {
       '<span class="client-total">' + fmt(c.total) + '</span></div>';
   });
   html += '</div></div>';
+
+  html += '<div class="card"><div class="section-title">' + icon("image", 15) + ' Top products</div>';
+  if (topProducts.length === 0) html += '<div class="empty-row">No product data yet</div>';
+  else {
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:12px">';
+    topProducts.forEach((p, idx) => {
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);border-radius:10px;padding:10px 12px">' +
+        '<div style="display:flex;align-items:center;gap:10px;min-width:0">' +
+        '<div class="rank' + (idx === 0 ? ' top' : '') + '">' + (idx + 1) + '</div>' +
+        '<div style="min-width:0"><div class="client-name">' + esc(p.name) + '</div>' +
+        '<div style="font-size:11.5px;color:var(--charcoal-soft)">' + p.qty + ' sold</div></div></div>' +
+        '<span class="client-total">' + fmt(p.revenue) + '</span></div>';
+    });
+    html += '</div>';
+  }
+  html += '</div>';
 
   html += '<div class="card"><div class="section-title" style="color:var(--amber)">' + icon("alertTriangle", 15) + ' Needs attention — unpaid, oldest first</div>';
   if (overdue.length === 0) html += '<div class="empty-row">Nothing outstanding — everything is paid up.</div>';
@@ -1846,7 +1931,7 @@ function handleCatalogPhoto(input) {
 window.handleCatalogPhoto = handleCatalogPhoto;
 async function saveCatalogDraft() {
   const it = state.catalogDraft;
-  if (!(it.name || "").trim()) { showToast("Item name is required"); return; }
+  if (!(it.name || "").trim()) { showToast("Item name is required", "error"); return; }
   try {
     await saveCatalogItemToDb(it);
     const idx = state.catalogItems.findIndex(c => c.id === it.id);
@@ -1854,7 +1939,7 @@ async function saveCatalogDraft() {
     goto_("items");
   } catch (e) {
     console.error(e);
-    showToast("Couldn't save the item — try again");
+    showToast("Couldn't save the item — try again", "error");
   }
 }
 window.saveCatalogDraft = saveCatalogDraft;
@@ -1865,7 +1950,7 @@ async function deleteCatalogItem(id) {
     render();
   } catch (e) {
     console.error(e);
-    showToast("Couldn't delete the item — try again");
+    showToast("Couldn't delete the item — try again", "error");
   }
 }
 window.deleteCatalogItem = deleteCatalogItem;
@@ -1962,74 +2047,6 @@ function renderSales() {
   html += '</div>';
   return html;
 }
-
-// ---------- Invoice Table (spreadsheet-style view, exportable to Excel/CSV) ----------
-function renderInvoiceTable() {
-  let html = '<div class="toolbar"><div style="font-size:12.5px;color:var(--charcoal-soft)">Every saved invoice, one row each — export to open in Excel or Google Sheets.</div>' +
-    '<button class="btn btn-primary" onclick="exportInvoicesCSV()">' + icon("download", 15) + ' Export to Excel (CSV)</button></div>';
-
-  if (state.invoices.length === 0) {
-    return html + emptyState("No invoices yet", "Once you raise invoices, every field shows up here as a row you can export.", "Create your first invoice", "goto_('new')");
-  }
-
-  const cols = ["Invoice #", "Date", "Due date", "Client", "Phone", "Client PAN", "Items", "Subtotal", "Discount", "Shipping", "Total", "Paid", "Due", "Status", "Issued by", ""];
-  html += '<div class="sheet-wrap"><table class="sheet"><thead><tr>' + cols.map(c => '<th>' + esc(c) + '</th>').join('') + '</tr></thead><tbody>';
-  state.invoices.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(inv => {
-    const t = invoiceTotals(inv);
-    const itemsSummary = inv.items.map(it => (it.desc || "—") + " x" + (it.qty || 0)).join("; ");
-    html += '<tr onclick="goto_(\'view\',\'' + inv.id + '\')" style="cursor:pointer">' +
-      '<td>' + esc(inv.number) + '</td>' +
-      '<td>' + esc(inv.date) + '</td>' +
-      '<td>' + esc(inv.dueDate || "—") + '</td>' +
-      '<td>' + esc(inv.clientName || "—") + '</td>' +
-      '<td>' + esc(inv.clientPhone || "—") + '</td>' +
-      '<td>' + esc(inv.clientPan || "—") + '</td>' +
-      '<td>' + esc(itemsSummary || "—") + '</td>' +
-      '<td class="num">' + fmt(t.preDiscountSubtotal) + '</td>' +
-      '<td class="num">' + (t.discountAmount > 0 ? fmt(t.discountAmount) : "—") + '</td>' +
-      '<td class="num">' + (t.shippingEnabled && t.shipping > 0 ? fmt(t.shipping) : "—") + '</td>' +
-      '<td class="num">' + fmt(t.total) + '</td>' +
-      '<td class="num">' + fmt(t.amountPaid) + '</td>' +
-      '<td class="num">' + fmt(t.due) + '</td>' +
-      '<td>' + (inv.status === "paid" ? "Paid" : "Unpaid") + '</td>' +
-      '<td>' + esc(inv.issuedBy || "—") + '</td>' +
-      '<td onclick="event.stopPropagation()"><button class="btn-icon" title="Delete" onclick="deleteInvoice(\'' + inv.id + '\')">' + icon("trash", 14) + '</button></td>' +
-      '</tr>';
-  });
-  html += '</tbody></table></div>';
-  return html;
-}
-
-function csvCell(v) {
-  const s = String(v === undefined || v === null ? "" : v);
-  return '"' + s.replace(/"/g, '""') + '"';
-}
-function exportInvoicesCSV() {
-  const cols = ["Invoice #", "Date", "Due date", "Client", "Phone", "Client PAN", "Items", "Subtotal", "Discount", "Shipping", "Total", "Paid", "Due", "Status", "Issued by"];
-  const rows = [cols];
-  state.invoices.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(inv => {
-    const t = invoiceTotals(inv);
-    const itemsSummary = inv.items.map(it => (it.desc || "—") + " x" + (it.qty || 0)).join("; ");
-    rows.push([
-      inv.number, inv.date, inv.dueDate || "", inv.clientName || "", inv.clientPhone || "", inv.clientPan || "",
-      itemsSummary, t.preDiscountSubtotal.toFixed(2), t.discountAmount.toFixed(2),
-      (t.shippingEnabled ? t.shipping : 0).toFixed(2), t.total.toFixed(2), t.amountPaid.toFixed(2), t.due.toFixed(2),
-      inv.status === "paid" ? "Paid" : "Unpaid", inv.issuedBy || "",
-    ]);
-  });
-  const csv = "\uFEFF" + rows.map(r => r.map(csvCell).join(",")).join("\r\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "rk-alpine-invoices-" + todayISO() + ".csv";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  showToast("Invoice table exported");
-}
-window.exportInvoicesCSV = exportInvoicesCSV;
 
 function renderFormTotalsOnly() {
   const t = invoiceTotals(state.draft);
@@ -2299,7 +2316,7 @@ function render() {
   const nib = document.getElementById("new-invoice-btn");
   if (nib) nib.innerHTML = icon("plusCircle", 15) + " New invoice";
   const pageFns = { dashboard: renderDashboard, list: renderList, clients: renderClients, settings: renderSettings, new: renderForm, edit: renderForm, view: renderView,
-    items: renderItems, itemNew: renderItemForm, itemEdit: renderItemForm, sales: renderSales, table: renderInvoiceTable };
+    items: renderItems, itemNew: renderItemForm, itemEdit: renderItemForm, sales: renderSales };
   document.getElementById("main-content").innerHTML = (pageFns[state.page] || renderDashboard)();
   if (state.page === "new" || state.page === "edit") { renderFormTotalsOnly(); if (formError) liveValidateClientName(); updateClientDueInfo(); }
   if (state.page === "new" && autofocusClientName) {
