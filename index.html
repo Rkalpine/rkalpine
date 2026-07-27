@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>RK Alpine Agro — Invoices</title>
-<link rel="icon"type="image/png"href="logo.png">
+<title>RK Alpine Agro Processing Udhyog — Invoices</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap');
   @font-face { font-family: 'system'; src: local('Arial'); }
@@ -380,59 +379,38 @@
     <img class="login-logo" id="login-logo" src="" alt="RK Alpine logo"/>
     <div class="login-title" id="login-title-name"></div>
     <div class="login-sub">Sign in to open invoices &amp; records</div>
-    <div class="login-error" id="login-error">Incorrect username or password.</div>
+    <div class="login-error" id="login-error">Incorrect email or password.</div>
     <div class="login-error" id="forgot-success" style="color:var(--green);background:rgba(43,93,63,0.08)"></div>
     <form id="login-form" onsubmit="return false;">
       <div class="login-field">
-        <label class="field-label">Username</label>
-        <input class="field-input" id="login-username" autocomplete="username" placeholder="Issuer name" />
+        <label class="field-label">Email</label>
+        <input class="field-input" id="login-username" type="email" autocomplete="username" placeholder="admin@example.com" />
       </div>
       <div class="login-field">
         <label class="field-label">Password</label>
         <div class="pw-wrap"><input class="field-input" id="login-password" type="password" autocomplete="current-password" placeholder="••••••" /><button type="button" class="pw-toggle" onclick="togglePw(this)" tabindex="-1"></button></div>
       </div>
-      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center" onclick="attemptLogin()">Sign in</button>
+      <button type="submit" class="btn btn-primary" id="login-submit-btn" style="width:100%;justify-content:center" onclick="attemptLogin()">Sign in</button>
     </form>
     <button onclick="showForgotPassword()" style="width:100%;text-align:center;background:none;border:none;color:var(--charcoal-soft);font-size:12px;font-family:inherit;cursor:pointer;margin-top:14px;padding:4px;text-decoration:underline;">Forgot password?</button>
     <div id="login-blocked-banner" style="display:none;margin-top:10px;text-align:center;font-size:12px;color:var(--rust-deep);background:var(--rust-soft);border-radius:7px;padding:8px 10px;"></div>
-    <div class="login-hint">Team member? Ask your admin if you ever forget your username or password.</div>
-  </div>
-</div>
-<div id="force-change-screen" style="display:none;min-height:100vh;align-items:center;justify-content:center;padding:24px;">
-  <div class="login-card">
-    <img class="login-logo" src="" id="force-change-logo" alt="RK Alpine logo"/>
-    <div class="login-title" id="force-change-title">Set a new admin login</div>
-    <div class="login-sub" id="force-change-sub">Your admin login was just reset. Choose a new username and password to continue — this step can't be skipped.</div>
-    <div class="login-error" id="force-change-error"></div>
-    <div class="login-field">
-      <label class="field-label">New username</label>
-      <input class="field-input" id="force-username" autocomplete="username" placeholder="Choose a new admin username" />
-    </div>
-    <div class="login-field">
-      <label class="field-label">New password</label>
-      <div class="pw-wrap"><input class="field-input" id="force-password" type="password" autocomplete="new-password" placeholder="Choose a new password" /><button type="button" class="pw-toggle" onclick="togglePw(this)" tabindex="-1"></button></div>
-    </div>
-    <div class="login-field">
-      <label class="field-label">Confirm new password</label>
-      <div class="pw-wrap"><input class="field-input" id="force-password-confirm" type="password" autocomplete="new-password" placeholder="Re-enter the new password" /><button type="button" class="pw-toggle" onclick="togglePw(this)" tabindex="-1"></button></div>
-    </div>
-    <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="submitForceChange()">Save &amp; continue</button>
+    <div class="login-hint">Only the 2 registered admin accounts can sign in.</div>
   </div>
 </div>
 <div class="modal-overlay" id="forgot-modal">
   <div class="modal-card">
-    <div class="modal-title" id="forgot-modal-title">Reset admin login?</div>
-    <div class="modal-body" id="forgot-modal-body">This resets the admin login. You will need to sign in and choose a brand new username and password right away. Team accounts (user1–user4) are not affected by this — they should contact the admin to reset their own password.</div>
+    <div class="modal-title" id="forgot-modal-title">Send password reset email?</div>
+    <div class="modal-body" id="forgot-modal-body">We'll email a password reset link to the address entered above. Enter your email first, then tap "Forgot password?" again.</div>
     <div class="modal-actions" id="forgot-modal-actions">
       <button class="btn btn-ghost" onclick="cancelForgotPassword()">Cancel</button>
-      <button class="btn btn-primary" id="forgot-confirm-btn" onclick="confirmForgotPassword()">Reset admin</button>
+      <button class="btn btn-primary" id="forgot-confirm-btn" onclick="confirmForgotPassword()">Send reset email</button>
     </div>
   </div>
 </div>
 <div class="modal-overlay" id="signout-modal">
   <div class="modal-card">
     <div class="modal-title">Sign out?</div>
-    <div class="modal-body">You'll need your username and password to sign back in.</div>
+    <div class="modal-body">You'll need your email and password to sign back in.</div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="cancelSignOut()">Cancel</button>
       <button class="btn btn-primary" onclick="confirmSignOut()">Sign out</button>
@@ -445,7 +423,7 @@
     <div class="modal-body" id="reset-user-body"></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="cancelResetUser()">Cancel</button>
-      <button class="btn btn-primary" onclick="confirmResetUser()">Reset</button>
+      <button class="btn btn-primary" onclick="confirmResetUser()">Send reset email</button>
     </div>
   </div>
 </div>
@@ -552,9 +530,15 @@ function pwField(id, placeholder, autocomplete) {
     '/><button type="button" class="pw-toggle" onclick="togglePw(this)" tabindex="-1">' + icon("eye", 16) + '</button></div>';
 }
 
+// ---------- Supabase ----------
+// Fill these in from Project Settings -> API in your Supabase dashboard.
+const SUPABASE_URL = "https://gvzaohdvaqwlihplalcu.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_-bQgjnarUoSaJf3Iq1b5Lw_OxBhUP4C";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 // ---------- Constants / helpers ----------
 const CURRENCY = "Rs.";
-function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+function uid() { return crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2, 8)); }
 function todayISO() { return new Date().toISOString().slice(0, 10); }
 function fmt(n) { return CURRENCY + " " + (Math.round((n + Number.EPSILON) * 100) / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 }); }
 function monthLabel(d) { return new Date(d).toLocaleString("en-US", { month: "short", year: "2-digit" }); }
@@ -617,14 +601,6 @@ const NEPALI_NUM_WORDS = [
   "असी", "एकासी", "बयासी", "त्रियासी", "चौरासी", "पचासी", "छयासी", "सतासी", "अठासी", "उनान्नब्बे",
   "नब्बे", "एकान्नब्बे", "बयान्नब्बे", "त्रियान्नब्बे", "चौरान्नब्बे", "पन्चान्नब्बे", "छयान्नब्बे", "सन्तान्नब्बे", "अन्ठान्नब्बे", "उनान्सय",
 ];
-// ---------- Supabase (data storage) ----------
-// Fill these in from your Supabase project: Project Settings -> API.
-// The anon key is safe to expose in client-side code like this - it only
-// works within whatever access rules (RLS policies) you set on the tables.
-const SUPABASE_URL = "https://yoicarhenxoxymxgylly.supabase.co"; // e.g. https://abcdefgh.supabase.co
-const SUPABASE_ANON_KEY = "sb_publishable_BObJEb08xJqeg17sgQ6Bjw_eX2FJToD";
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
 function nepaliTwoDigitWords(n) { return NEPALI_NUM_WORDS[n]; }
 function nepaliThreeDigitWords(n) {
   const h = Math.floor(n / 100), rest = n % 100;
@@ -678,188 +654,139 @@ const defaultCompany = {
   pan: "129956855",
 };
 
-// ---------- Supabase <-> app-shape mappers ----------
-function rowToInvoice(row, items) {
+// ---------- Supabase data layer ----------
+// Every read/write below talks to Postgres instead of localStorage, so both
+// admins always see the same invoices, catalog, and company details. Invoice
+// numbers are handed out by the next_invoice_number() Postgres function
+// (see schema.sql), which uses a database sequence — that is what makes it
+// safe for both admins to create an invoice at the exact same moment without
+// ever colliding on the same number.
+
+function dbCompanyToApp(row) {
+  if (!row) return Object.assign({}, defaultCompany);
   return {
-    id: row.id, number: row.number, date: row.date || "", dueDate: row.due_date || "",
-    clientName: row.client_name || "", clientPhone: row.client_phone || "",
-    clientAddress: row.client_address || "", clientPan: row.client_pan || "",
-    items: (items || []).map(it => ({ id: it.id, desc: it.description || "", qty: it.qty, unit: it.unit || "", rate: it.rate })),
-    shippingEnabled: !!row.shipping_enabled, shippingCharge: row.shipping_charge || 0,
-    discountType: row.discount_type || "none", discountValue: row.discount_value || 0,
-    notes: row.notes || "", status: row.status || "unpaid", amountPaid: row.amount_paid || 0,
-    issuedBy: row.issued_by || "",
+    name: row.name || defaultCompany.name, nameNe: row.name_ne || "",
+    address: row.address || "", addressNe: row.address_ne || "",
+    phone: row.phone || "", email: row.email || "", pan: row.pan || "",
   };
 }
-function invoiceToRow(inv, deleted) {
+function appCompanyToDbRow(c) {
+  return { id: 1, name: c.name || "", name_ne: c.nameNe || "", address: c.address || "", address_ne: c.addressNe || "", phone: c.phone || "", email: c.email || "", pan: c.pan || "" };
+}
+async function fetchCompany() {
+  const { data, error } = await sb.from("company").select("*").eq("id", 1).maybeSingle();
+  if (error) { console.error(error); return Object.assign({}, defaultCompany); }
+  return dbCompanyToApp(data);
+}
+async function saveCompanyToDb(company) {
+  const { error } = await sb.from("company").upsert(appCompanyToDbRow(company));
+  if (error) throw error;
+}
+
+function dbCatalogToApp(row) {
+  return { id: row.id, name: row.name || "", nameNe: row.name_ne || "", unit: row.unit || "", unitNe: row.unit_ne || "", rate: Number(row.rate) || 0, photo: row.photo || "", description: row.description || "" };
+}
+function appCatalogToDbRow(it) {
+  return { id: it.id, name: it.name || "", name_ne: it.nameNe || "", unit: it.unit || "", unit_ne: it.unitNe || "", rate: Number(it.rate) || 0, photo: it.photo || "", description: it.description || "" };
+}
+async function fetchCatalogItems() {
+  const { data, error } = await sb.from("catalog_items").select("*").order("created_at", { ascending: true });
+  if (error) { console.error(error); return []; }
+  return (data || []).map(dbCatalogToApp);
+}
+async function saveCatalogItemToDb(it) {
+  const { error } = await sb.from("catalog_items").upsert(appCatalogToDbRow(it));
+  if (error) throw error;
+}
+async function deleteCatalogItemFromDb(id) {
+  const { error } = await sb.from("catalog_items").delete().eq("id", id);
+  if (error) throw error;
+}
+
+function dbInvoiceToApp(row) {
+  const items = (row.invoice_items || []).slice().sort((a, b) => (a.position || 0) - (b.position || 0))
+    .map(it => ({ id: it.id, desc: it.description || "", qty: Number(it.qty) || 0, unit: it.unit || "", rate: Number(it.rate) || 0 }));
   return {
-    id: inv.id, number: inv.number, date: inv.date || null, due_date: inv.dueDate || null,
-    client_name: inv.clientName || "", client_phone: inv.clientPhone || "",
-    client_address: inv.clientAddress || "", client_pan: inv.clientPan || "",
+    id: row.id, number: row.number, date: row.date, dueDate: row.due_date || "",
+    clientName: row.client_name || "", clientPhone: row.client_phone || "", clientAddress: row.client_address || "", clientPan: row.client_pan || "",
+    items: items.length ? items : [newBlankItem()],
+    shippingEnabled: !!row.shipping_enabled, shippingCharge: Number(row.shipping_charge) || 0,
+    discountType: row.discount_type || "none", discountValue: Number(row.discount_value) || 0,
+    notes: row.notes || "", status: row.status || "unpaid", amountPaid: Number(row.amount_paid) || 0,
+    issuedBy: row.issued_by_name || "", issuedById: row.issued_by || null,
+    deletedAt: row.deleted_at || null, deletedById: row.deleted_by || null,
+  };
+}
+async function fetchInvoicesRaw(wantDeleted) {
+  let q = sb.from("invoices").select("*, invoice_items(*)").order("created_at", { ascending: false });
+  q = wantDeleted ? q.not("deleted_at", "is", null) : q.is("deleted_at", null);
+  const { data, error } = await q;
+  if (error) { console.error(error); return []; }
+  return (data || []).map(dbInvoiceToApp);
+}
+async function fetchInvoices() { return fetchInvoicesRaw(false); }
+async function fetchDeletedInvoices() {
+  const rows = await fetchInvoicesRaw(true);
+  return rows.map(inv => ({ invoice: inv, deletedAt: inv.deletedAt, deletedBy: adminNameById(inv.deletedById) }));
+}
+
+// Saves an invoice. For a brand-new invoice this first asks the database for
+// the next invoice number (atomic, race-safe across both admins), then
+// writes the invoice row and replaces its line items.
+async function saveInvoiceToDb(inv, isNew) {
+  if (isNew) {
+    const { data: num, error: numErr } = await sb.rpc("next_invoice_number");
+    if (numErr) throw numErr;
+    inv.number = num;
+  }
+  const row = {
+    id: inv.id, number: inv.number, date: inv.date, due_date: inv.dueDate || null,
+    client_name: inv.clientName || "", client_phone: inv.clientPhone || "", client_address: inv.clientAddress || "", client_pan: inv.clientPan || "",
     shipping_enabled: !!inv.shippingEnabled, shipping_charge: Number(inv.shippingCharge) || 0,
     discount_type: inv.discountType || "none", discount_value: Number(inv.discountValue) || 0,
     notes: inv.notes || "", status: inv.status || "unpaid", amount_paid: Number(inv.amountPaid) || 0,
-    issued_by: inv.issuedBy || "", deleted: !!deleted,
+    issued_by: state.currentAdmin ? state.currentAdmin.id : null,
+    issued_by_name: inv.issuedBy || (state.currentAdmin ? state.currentAdmin.name : ""),
   };
-}
-
-async function loadInvoices() {
-  try {
-    const { data: rows, error } = await sb.from("invoices").select("*").eq("deleted", false);
-    if (error) throw error;
-    const { data: items, error: e2 } = await sb.from("invoice_items").select("*");
-    if (e2) throw e2;
-    return (rows || []).map(r => rowToInvoice(r, (items || []).filter(it => it.invoice_id === r.id)));
-  } catch (e) { console.error(e); return []; }
-}
-
-// Writes every invoice currently in state.invoices (upsert). Removing an invoice from
-// this array does NOT delete its DB row on its own -- deleteInvoice()/restoreInvoice()
-// separately call persistDeletedInvoices() (and permanentlyDeleteInvoice() calls a real
-// DELETE) to keep the two sides in sync.
-async function persistInvoices() {
-  try { for (const inv of state.invoices) await upsertInvoiceRow(inv, false); }
-  catch (e) { console.error(e); }
-}
-async function upsertInvoiceRow(inv, deleted, deletedAt, deletedBy) {
-  const row = invoiceToRow(inv, deleted);
-  if (deleted) { row.deleted_at = deletedAt || new Date().toISOString(); row.deleted_by = deletedBy || ""; }
   const { error } = await sb.from("invoices").upsert(row);
   if (error) throw error;
   const { error: delErr } = await sb.from("invoice_items").delete().eq("invoice_id", inv.id);
   if (delErr) throw delErr;
-  const itemRows = (inv.items || []).map(it => ({ id: it.id, invoice_id: inv.id, description: it.desc || "", qty: Number(it.qty) || 0, unit: it.unit || "", rate: Number(it.rate) || 0 }));
-  if (itemRows.length) { const { error: insErr } = await sb.from("invoice_items").insert(itemRows); if (insErr) throw insErr; }
+  const itemRows = inv.items.map((it, idx) => ({
+    invoice_id: inv.id, id: it.id, position: idx, description: it.desc || "", qty: Number(it.qty) || 0, unit: it.unit || "", rate: Number(it.rate) || 0,
+  }));
+  if (itemRows.length) {
+    const { error: insErr } = await sb.from("invoice_items").insert(itemRows);
+    if (insErr) throw insErr;
+  }
+  return inv;
+}
+async function softDeleteInvoiceInDb(id) {
+  const { error } = await sb.from("invoices").update({
+    deleted_at: new Date().toISOString(),
+    deleted_by: state.currentAdmin ? state.currentAdmin.id : null,
+  }).eq("id", id);
+  if (error) throw error;
+}
+async function restoreInvoiceInDb(id) {
+  const { error } = await sb.from("invoices").update({ deleted_at: null, deleted_by: null }).eq("id", id);
+  if (error) throw error;
+}
+async function permanentlyDeleteInvoiceInDb(id) {
+  await sb.from("invoice_items").delete().eq("invoice_id", id);
+  const { error } = await sb.from("invoices").delete().eq("id", id);
+  if (error) throw error;
 }
 
-async function loadDeletedInvoices() {
-  try {
-    const { data: rows, error } = await sb.from("invoices").select("*").eq("deleted", true);
-    if (error) throw error;
-    const { data: items, error: e2 } = await sb.from("invoice_items").select("*");
-    if (e2) throw e2;
-    return (rows || []).map(r => ({
-      invoice: rowToInvoice(r, (items || []).filter(it => it.invoice_id === r.id)),
-      deletedAt: r.deleted_at, deletedBy: r.deleted_by,
-    }));
-  } catch (e) { console.error(e); return []; }
-}
-async function persistDeletedInvoices() {
-  try { for (const rec of state.deletedInvoices) await upsertInvoiceRow(rec.invoice, true, rec.deletedAt, rec.deletedBy); }
-  catch (e) { console.error(e); }
-}
-async function hardDeleteInvoiceRow(id) {
-  try { const { error } = await sb.from("invoices").delete().eq("id", id); if (error) throw error; }
-  catch (e) { console.error(e); }
-}
-
-// Invoice numbering: this counter only ever goes up, even across deletions, so a number
-// is never reused. If an invoice is deleted, the gap it leaves in the sequence is the
-// visible proof that something was removed (rather than silently renumbering everything).
-function parseSeqFromNumber(numberStr) {
-  const m = String(numberStr || "").match(/(\d+)\s*$/);
-  return m ? parseInt(m[0], 10) : 0;
-}
-function computeInvoiceSeqFallback(invoices, deletedInvoices) {
-  const all = [...invoices, ...deletedInvoices.map(d => d.invoice)];
-  const maxSeq = all.reduce((m, inv) => Math.max(m, parseSeqFromNumber(inv.number)), 0);
-  return maxSeq + 1;
-}
-function persistInvoiceSeq() {
-  sb.from("company").update({ invoice_seq: state.invoiceSeq }).eq("id", 1).then(({ error }) => { if (error) console.error(error); });
-}
-function peekNextInvoiceNumber() { return "RKA-" + new Date().getFullYear() + "-" + String(state.invoiceSeq).padStart(3, "0"); }
-function consumeInvoiceNumber() {
-  const n = peekNextInvoiceNumber();
-  state.invoiceSeq += 1;
-  persistInvoiceSeq();
-  return n;
-}
-
-function rowToCompany(row) {
-  return {
-    name: row.name || defaultCompany.name, nameNe: row.name_ne || defaultCompany.nameNe,
-    address: row.address || defaultCompany.address, addressNe: row.address_ne || defaultCompany.addressNe,
-    phone: row.phone || defaultCompany.phone, email: row.email || defaultCompany.email, pan: row.pan || defaultCompany.pan,
-  };
-}
-function companyToRow(c) {
-  return { id: 1, name: c.name, name_ne: c.nameNe, address: c.address, address_ne: c.addressNe, phone: c.phone, email: c.email, pan: c.pan };
-}
-async function loadCompany() {
-  try {
-    const { data, error } = await sb.from("company").select("*").eq("id", 1).maybeSingle();
-    if (error) throw error;
-    if (!data) {
-      const seedRow = Object.assign({ invoice_seq: 1 }, companyToRow(defaultCompany));
-      const { error: insErr } = await sb.from("company").insert(seedRow);
-      if (insErr) throw insErr;
-      return Object.assign({}, defaultCompany, { _invoiceSeq: 1 });
-    }
-    return Object.assign(rowToCompany(data), { _invoiceSeq: data.invoice_seq || 1 });
-  } catch (e) { console.error(e); return Object.assign({}, defaultCompany, { _invoiceSeq: 1 }); }
-}
-async function persistCompany() {
-  try { const { error } = await sb.from("company").upsert(companyToRow(state.company)); if (error) throw error; }
-  catch (e) { console.error(e); }
-}
-
-// ---------- Item catalog (photo + description, reusable across invoices) ----------
-function defaultCatalogItems() {
-  return [
-    { id: uid(), name: "Orthodox Black Tea", nameNe: "अर्थोडक्स कालो चिया", unit: "kg", unitNe: "कि.ग्रा.", rate: 850, photo: "", description: "Premium hand-processed orthodox leaf tea" },
-    { id: uid(), name: "Green Tea", nameNe: "हरियो चिया", unit: "kg", unitNe: "कि.ग्रा.", rate: 950, photo: "", description: "Fresh-processed green tea leaves" },
-    { id: uid(), name: "Large Cardamom (Alaichi)", nameNe: "अलैंची", unit: "kg", unitNe: "कि.ग्रा.", rate: 2200, photo: "", description: "Dried large cardamom, Grade A" },
-    { id: uid(), name: "Ginger (Aduwa)", nameNe: "अदुवा", unit: "kg", unitNe: "कि.ग्रा.", rate: 180, photo: "", description: "Fresh farm ginger" },
-    { id: uid(), name: "Turmeric Powder (Besar)", nameNe: "बेसार धुलो", unit: "kg", unitNe: "कि.ग्रा.", rate: 320, photo: "", description: "Sun-dried and ground turmeric" },
-    { id: uid(), name: "Broom Grass (Amliso)", nameNe: "अमलिसो", unit: "kg", unitNe: "कि.ग्रा.", rate: 150, photo: "", description: "Dried broom grass bundles" },
-    { id: uid(), name: "Ilam Orange (Suntala)", nameNe: "सुन्तला", unit: "kg", unitNe: "कि.ग्रा.", rate: 90, photo: "", description: "Fresh local oranges, seasonal" },
-    { id: uid(), name: "Maize (Makai)", nameNe: "मकै", unit: "kg", unitNe: "कि.ग्रा.", rate: 45, photo: "", description: "Dried whole maize grain" },
-    { id: uid(), name: "Soybean (Bhatmas)", nameNe: "भटमास", unit: "kg", unitNe: "कि.ग्रा.", rate: 110, photo: "", description: "Dried soybean, cleaned" },
-    { id: uid(), name: "Pure Cow Ghee", nameNe: "गाईको घिउ", unit: "kg", unitNe: "कि.ग्रा.", rate: 1600, photo: "", description: "Farm-made pure ghee" },
-  ];
-}
-function rowToCatalogItem(row) {
-  return { id: row.id, name: row.name || "", nameNe: row.name_ne || "", unit: row.unit || "", unitNe: row.unit_ne || "", rate: row.rate || 0, photo: row.photo || "", description: row.description || "" };
-}
-function catalogItemToRow(it) {
-  return { id: it.id, name: it.name || "", name_ne: it.nameNe || "", unit: it.unit || "", unit_ne: it.unitNe || "", rate: Number(it.rate) || 0, photo: it.photo || "", description: it.description || "" };
-}
-async function loadCatalogItems() {
-  try {
-    const { data, error } = await sb.from("catalog_items").select("*");
-    if (error) throw error;
-    if (!data || data.length === 0) {
-      const seeded = defaultCatalogItems();
-      const { error: insErr } = await sb.from("catalog_items").insert(seeded.map(catalogItemToRow));
-      if (insErr) throw insErr;
-      return seeded;
-    }
-    return data.map(rowToCatalogItem);
-  } catch (e) { console.error(e); return defaultCatalogItems(); }
-}
-async function persistCatalogItems() {
-  try {
-    const { data: existing, error: selErr } = await sb.from("catalog_items").select("id");
-    if (selErr) throw selErr;
-    const currentIds = new Set(state.catalogItems.map(i => i.id));
-    const toDelete = (existing || []).filter(r => !currentIds.has(r.id)).map(r => r.id);
-    if (toDelete.length) { const { error: delErr } = await sb.from("catalog_items").delete().in("id", toDelete); if (delErr) throw delErr; }
-    if (state.catalogItems.length) {
-      const { error: upErr } = await sb.from("catalog_items").upsert(state.catalogItems.map(catalogItemToRow));
-      if (upErr) throw upErr;
-    }
-  } catch (e) { console.error(e); }
-}
 function newBlankCatalogItem() { return { id: uid(), name: "", nameNe: "", unit: "", unitNe: "", rate: 0, photo: "", description: "" }; }
-
+function peekNextInvoiceNumber() { return "Auto-assigned when saved"; }
 function newBlankItem() { return { id: uid(), desc: "", qty: 1, unit: "", rate: 0 }; }
 function newBlankInvoice() {
   return {
     id: uid(), number: peekNextInvoiceNumber(),
     date: todayISO(), dueDate: "", clientName: "", clientPhone: "", clientAddress: "", clientPan: "",
     items: [newBlankItem()], shippingEnabled: false, shippingCharge: 0, discountType: "none", discountValue: 0, notes: "", status: "unpaid",
-    amountPaid: 0, issuedBy: state.currentUsername || "",
+    amountPaid: 0, issuedBy: state.currentAdmin ? state.currentAdmin.name : "",
   };
 }
 // discountType: "none" | "percent" | "flat" — discount is taken off the subtotal.
@@ -893,24 +820,33 @@ function invoiceTotals(inv) {
   };
 }
 
-// ---------- Users (admin + 4 team accounts) ----------
-function loadUsers() {
-  try {
-    const v = localStorage.getItem("rkalpine_users");
-    if (v) return JSON.parse(v);
-  } catch (e) {}
-  // first run: current issuer becomes the admin account; four blank team slots default to 12345
-  return [
-    { username: "RKALPINE", password: "12345", role: "admin" },
-    { username: "user1", password: "12345", role: "user" },
-    { username: "user2", password: "12345", role: "user" },
-    { username: "user3", password: "12345", role: "user" },
-    { username: "user4", password: "12345", role: "user" },
-  ];
+// ---------- Admins (exactly 2, managed in Supabase Auth + the admins table) ----------
+function adminNameById(id) {
+  if (!id) return "—";
+  const a = (state.admins || []).find(x => x.id === id);
+  return a ? a.name : "—";
 }
-function persistUsers() { try { localStorage.setItem("rkalpine_users", JSON.stringify(state.users)); } catch (e) { console.error(e); } }
-function findUser(username) {
-  return state.users.find(u => normName(u.username) === normName(username) && normName(u.username) !== "");
+async function fetchAdmins() {
+  const { data, error } = await sb.from("admins").select("*").order("created_at", { ascending: true });
+  if (error) { console.error(error); return []; }
+  return (data || []).map(r => ({ id: r.id, name: r.name || r.email, email: r.email }));
+}
+async function saveAdminNameToDb(id, name) {
+  const { error } = await sb.from("admins").update({ name }).eq("id", id);
+  if (error) throw error;
+}
+
+// Loads everything needed to show the app. Admins are fetched first since
+// deleted-invoice records need admin names for "Deleted by <name>".
+async function loadAllData() {
+  state.admins = await fetchAdmins();
+  const [company, catalogItems, invoices, deletedInvoices] = await Promise.all([
+    fetchCompany(), fetchCatalogItems(), fetchInvoices(), fetchDeletedInvoices(),
+  ]);
+  state.company = company;
+  state.catalogItems = catalogItems;
+  state.invoices = invoices;
+  state.deletedInvoices = deletedInvoices;
 }
 
 // ---------- App state ----------
@@ -918,9 +854,8 @@ const state = {
   invoices: [],
   deletedInvoices: [],
   company: Object.assign({}, defaultCompany),
-  users: [],
-  role: null,
-  currentUsername: null,
+  admins: [],
+  currentAdmin: null,
   page: "dashboard",
   activeId: null,
   draft: null,
@@ -929,61 +864,25 @@ const state = {
   catalogDraft: null,
   salesFrom: "",
   salesTo: "",
-  invoiceSeq: 1,
-  dataLoaded: false,
 };
-state.users = loadUsers();
-
-// Data lives in Supabase now (not localStorage), so it has to be fetched over the
-// network before the app has anything to show. This runs once, right after a
-// successful login (see showApp()), and populates everything above from the DB.
-let dataLoadPromise = null;
-function loadAllData() {
-  if (dataLoadPromise) return dataLoadPromise;
-  dataLoadPromise = (async () => {
-    const [invoices, deletedInvoices, company, catalogItems] = await Promise.all([
-      loadInvoices(), loadDeletedInvoices(), loadCompany(), loadCatalogItems(),
-    ]);
-    state.invoices = invoices;
-    state.deletedInvoices = deletedInvoices;
-    state.company = company;
-    state.catalogItems = catalogItems;
-    state.invoiceSeq = company._invoiceSeq || computeInvoiceSeqFallback(invoices, deletedInvoices);
-    state.dataLoaded = true;
-  })();
-  return dataLoadPromise;
-}
 
 // ---------- Login gate ----------
-// NOTE: this is a basic front-door lock (keeps casual visitors from opening the app on
-// this shared/borrowed computer). Because everything runs client-side, anyone who reads
-// the page source can find the passwords -- it is not real security against a determined
-// person, just a simple sign-in step for everyday use.
-const SESSION_KEY = "rkalpine_authed";
-const SESSION_ROLE_KEY = "rkalpine_role";
-const SESSION_USER_KEY = "rkalpine_user";
+// Real sign-in via Supabase Auth (email + password), restricted to the 2
+// rows in the `admins` table — see schema.sql. Row Level Security on every
+// table also enforces this server-side, so this check is a UX nicety, not
+// the actual security boundary.
 
 function normName(s) { return (s || "").trim().toLowerCase(); }
 
-async function showApp() {
+function showApp() {
   document.getElementById("login-screen").style.display = "none";
-  document.getElementById("force-change-screen").style.display = "none";
   document.getElementById("app-root").style.display = "flex";
-  updateResetWarningBadge();
-  if (!state.dataLoaded) {
-    const mc = document.getElementById("main-content");
-    if (mc) mc.innerHTML = '<div style="padding:60px;text-align:center;color:var(--charcoal-soft);font-size:14px">Loading your data…</div>';
-    try { await loadAllData(); }
-    catch (e) { console.error(e); }
-  }
   render();
+  subscribeToLiveUpdates();
 }
 
-let pendingForceChangeUser = null;
-let pendingForceChangeOldUsername = null;
-
 const LOGIN_ATTEMPTS_KEY = "rkalpine_login_attempts";
-const MAX_LOGIN_ATTEMPTS = 3;
+const MAX_LOGIN_ATTEMPTS = 5;
 function getLoginAttempts() { try { return Number(sessionStorage.getItem(LOGIN_ATTEMPTS_KEY)) || 0; } catch (e) { return 0; } }
 function incrementLoginAttempts() {
   const n = getLoginAttempts() + 1;
@@ -992,113 +891,64 @@ function incrementLoginAttempts() {
 }
 function resetLoginAttempts() { try { sessionStorage.removeItem(LOGIN_ATTEMPTS_KEY); } catch (e) {} }
 
-function attemptLogin() {
-  const userVal = document.getElementById("login-username").value;
-  const passVal = document.getElementById("login-password").value;
+async function attemptLogin() {
+  const email = document.getElementById("login-username").value.trim();
+  const password = document.getElementById("login-password").value;
   const errBox = document.getElementById("login-error");
+  const btn = document.getElementById("login-submit-btn");
 
-  if (getForgotBlockRemainingMs() > 0) {
-    showBlockedModal();
+  if (getForgotBlockRemainingMs() > 0) { showBlockedModal(); return; }
+  if (!email || !password) {
+    errBox.innerHTML = icon("alertTriangle", 12) + " Enter both email and password.";
+    errBox.classList.add("show");
     return;
   }
 
-  const adminUser = state.users.find(u => u.role === "admin");
-  const trimmedUser = userVal.trim();
-  if (adminUser && adminUser.mustReset && trimmedUser !== "" && normName(trimmedUser) !== "admin") {
-    // A reset is pending -- only "admin" should be signing in right now. Anything else during
-    // this window counts toward the same 3-strike lockout as a bad "Forgot password" attempt.
-    const attemptsSoFar = incrementForgotAttempts();
-    const remaining = MAX_LOGIN_ATTEMPTS - attemptsSoFar;
-    if (remaining > 0) {
-      errBox.innerHTML = icon("alertTriangle", 12) + ' A password reset is pending — only "admin" can sign in right now. <strong>' +
-        remaining + ' attempt' + (remaining === 1 ? '' : 's') + ' left</strong> before the system locks for 5 minutes.';
+  if (btn) { btn.disabled = true; btn.textContent = "Signing in…"; }
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if (error || !data || !data.user) {
+      const attemptsSoFar = incrementLoginAttempts();
+      const remaining = MAX_LOGIN_ATTEMPTS - attemptsSoFar;
+      if (remaining > 0) {
+        errBox.innerHTML = icon("alertTriangle", 12) + ' Incorrect email or password. <strong>' +
+          remaining + ' attempt' + (remaining === 1 ? '' : 's') + ' left</strong> before the system locks for 5 minutes.';
+        errBox.classList.add("show");
+      } else {
+        errBox.classList.remove("show");
+        resetLoginAttempts();
+        startForgotBlock();
+        showBlockedModal();
+      }
+      return;
+    }
+    const admin = await fetchCurrentAdminProfile(data.user.id);
+    if (!admin) {
+      await sb.auth.signOut();
+      errBox.innerHTML = icon("alertTriangle", 12) + " This account isn't registered as an admin for this site.";
       errBox.classList.add("show");
       return;
     }
-    resetForgotAttempts();
-    startForgotBlock();
-    showBlockedModal();
-    return;
-  }
-
-  const match = findUser(userVal);
-  if (match && match.password === passVal && passVal !== "") {
-    errBox.classList.remove("show");
     resetLoginAttempts();
-    if (match.mustReset) {
-      // credentials were reset -- a new username/password is required before entry, for
-      // whichever account (admin or a team account) this reset applies to
-      pendingForceChangeUser = match;
-      pendingForceChangeOldUsername = match.username;
-      document.getElementById("force-change-title").textContent = "Set a new login";
-      document.getElementById("force-change-sub").textContent = "Your login was just reset. Choose a new username and password to continue — this step can't be skipped.";
-      document.getElementById("login-screen").style.display = "none";
-      document.getElementById("force-change-screen").style.display = "flex";
-      document.getElementById("force-username").value = "";
-      document.getElementById("force-password").value = "";
-      document.getElementById("force-password-confirm").value = "";
-      document.getElementById("force-change-error").classList.remove("show");
-      document.getElementById("force-username").focus();
-      return;
-    }
-    state.role = match.role;
-    state.currentUsername = match.username;
-    try {
-      sessionStorage.setItem(SESSION_KEY, "1");
-      sessionStorage.setItem(SESSION_ROLE_KEY, match.role);
-      sessionStorage.setItem(SESSION_USER_KEY, match.username);
-    } catch (e) {}
+    errBox.classList.remove("show");
+    state.currentAdmin = admin;
+    await loadAllData();
     showApp();
-  } else {
-    const attemptsSoFar = incrementLoginAttempts();
-    const remaining = MAX_LOGIN_ATTEMPTS - attemptsSoFar;
-    if (remaining > 0) {
-      errBox.innerHTML = icon("alertTriangle", 12) + ' Incorrect username or password. <strong>' +
-        remaining + ' attempt' + (remaining === 1 ? '' : 's') + ' left</strong> before the system locks for 5 minutes.';
-      errBox.classList.add("show");
-    } else {
-      errBox.classList.remove("show");
-      resetLoginAttempts();
-      startForgotBlock();
-      showBlockedModal();
-    }
+  } catch (e) {
+    console.error(e);
+    errBox.textContent = "Something went wrong signing in — please check your connection and try again.";
+    errBox.classList.add("show");
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "Sign in"; }
   }
 }
 window.attemptLogin = attemptLogin;
 
-function submitForceChange() {
-  const newUsername = document.getElementById("force-username").value.trim();
-  const newPassword = document.getElementById("force-password").value;
-  const confirmPassword = document.getElementById("force-password-confirm").value;
-  const errBox = document.getElementById("force-change-error");
-  let err = null;
-  if (!newUsername) err = "Choose a new username.";
-  else if (normName(newUsername) === normName(pendingForceChangeOldUsername)) err = "Please choose a username other than the default \"" + pendingForceChangeOldUsername + "\".";
-  else if (!newPassword) err = "Choose a new password.";
-  else if (newPassword !== confirmPassword) err = "Passwords don't match.";
-  if (err) {
-    errBox.textContent = err;
-    errBox.classList.add("show");
-    return;
-  }
-  pendingForceChangeUser.username = newUsername;
-  pendingForceChangeUser.password = newPassword;
-  pendingForceChangeUser.mustReset = false;
-  const roleForSession = pendingForceChangeUser.role;
-  persistUsers();
-  updateResetWarningBadge();
-  state.role = roleForSession;
-  state.currentUsername = newUsername;
-  try {
-    sessionStorage.setItem(SESSION_KEY, "1");
-    sessionStorage.setItem(SESSION_ROLE_KEY, roleForSession);
-    sessionStorage.setItem(SESSION_USER_KEY, newUsername);
-  } catch (e) {}
-  pendingForceChangeUser = null;
-  pendingForceChangeOldUsername = null;
-  showApp();
+async function fetchCurrentAdminProfile(userId) {
+  const { data, error } = await sb.from("admins").select("*").eq("id", userId).maybeSingle();
+  if (error || !data) return null;
+  return { id: data.id, name: data.name || data.email, email: data.email };
 }
-window.submitForceChange = submitForceChange;
 
 function signOut() {
   document.getElementById("signout-modal").classList.add("show");
@@ -1110,11 +960,11 @@ function cancelSignOut() {
 }
 window.cancelSignOut = cancelSignOut;
 
-function confirmSignOut() {
+async function confirmSignOut() {
   document.getElementById("signout-modal").classList.remove("show");
-  try { sessionStorage.removeItem(SESSION_KEY); sessionStorage.removeItem(SESSION_ROLE_KEY); sessionStorage.removeItem(SESSION_USER_KEY); } catch (e) {}
-  state.role = null;
-  state.currentUsername = null;
+  try { await sb.auth.signOut(); } catch (e) {}
+  unsubscribeFromLiveUpdates();
+  state.currentAdmin = null;
   document.getElementById("app-root").style.display = "none";
   document.getElementById("login-username").value = "";
   document.getElementById("login-password").value = "";
@@ -1151,28 +1001,16 @@ function updateLoginBlockedBanner() {
   const remaining = getForgotBlockRemainingMs();
   if (remaining > 0) {
     banner.style.display = "block";
-    banner.innerHTML = icon("alertTriangle", 12) + ' Server is blocked. Wait <strong>' + formatCountdown(remaining) + '</strong> to try &quot;Forgot password&quot; again.';
+    banner.innerHTML = icon("alertTriangle", 12) + ' Too many attempts. Wait <strong>' + formatCountdown(remaining) + '</strong> before trying again.';
   } else {
     banner.style.display = "none";
-  }
-}
-
-function updateResetWarningBadge() {
-  const badge = document.getElementById("reset-warning-badge");
-  if (!badge) return;
-  const adminUser = state.users.find(u => u.role === "admin");
-  if (adminUser && adminUser.mustReset) {
-    badge.innerHTML = icon("alertTriangle", 14) + ' Admin password reset. Be careful.';
-    badge.classList.add("show");
-  } else {
-    badge.classList.remove("show");
   }
 }
 function showBlockedModal() {
   const title = document.getElementById("forgot-modal-title");
   const body = document.getElementById("forgot-modal-body");
   const actions = document.getElementById("forgot-modal-actions");
-  title.textContent = "Server is blocked";
+  title.textContent = "Too many attempts";
   actions.innerHTML = '<button class="btn btn-primary" style="flex:1" onclick="cancelForgotPassword()">Close</button>';
   clearInterval(forgotCountdownInterval);
   function tick() {
@@ -1182,64 +1020,29 @@ function showBlockedModal() {
       body.innerHTML = 'You can try again now.';
       return;
     }
-    body.innerHTML = 'Too many attempts. Wait <strong>' + formatCountdown(remaining) + '</strong> before trying again.';
+    body.innerHTML = 'Wait <strong>' + formatCountdown(remaining) + '</strong> before trying again.';
   }
   tick();
   forgotCountdownInterval = setInterval(tick, 1000);
   document.getElementById("forgot-modal").classList.add("show");
 }
 
-const FORGOT_ATTEMPTS_KEY = "rkalpine_forgot_attempts";
-function getForgotAttempts() { try { return Number(sessionStorage.getItem(FORGOT_ATTEMPTS_KEY)) || 0; } catch (e) { return 0; } }
-function incrementForgotAttempts() {
-  const n = getForgotAttempts() + 1;
-  try { sessionStorage.setItem(FORGOT_ATTEMPTS_KEY, String(n)); } catch (e) {}
-  return n;
-}
-function resetForgotAttempts() { try { sessionStorage.removeItem(FORGOT_ATTEMPTS_KEY); } catch (e) {} }
-
 function showForgotPassword() {
   document.getElementById("login-error").classList.remove("show");
   document.getElementById("forgot-success").classList.remove("show");
-
-  if (getForgotBlockRemainingMs() > 0) {
-    showBlockedModal();
+  if (getForgotBlockRemainingMs() > 0) { showBlockedModal(); return; }
+  const email = document.getElementById("login-username").value.trim();
+  if (!email) {
+    const errBox = document.getElementById("login-error");
+    errBox.innerHTML = icon("alertTriangle", 12) + " Enter your email above first, then tap \"Forgot password?\" again.";
+    errBox.classList.add("show");
     return;
   }
-
-  const enteredUsername = document.getElementById("login-username").value.trim();
-  if (enteredUsername !== "" && normName(enteredUsername) !== "admin") {
-    const attemptsSoFar = incrementForgotAttempts();
-    const remaining = MAX_LOGIN_ATTEMPTS - attemptsSoFar;
-    if (remaining > 0) {
-      const errBox = document.getElementById("login-error");
-      errBox.innerHTML = icon("alertTriangle", 12) + ' "Forgot password" only works for the admin account. <strong>' +
-        remaining + ' attempt' + (remaining === 1 ? '' : 's') + ' left</strong> before the system locks for 5 minutes.';
-      errBox.classList.add("show");
-      return;
-    }
-    resetForgotAttempts();
-    startForgotBlock();
-    showBlockedModal();
-    return;
-  }
-  resetForgotAttempts();
-
-  const adminUser = state.users.find(u => u.role === "admin");
-  const title = document.getElementById("forgot-modal-title");
-  const body = document.getElementById("forgot-modal-body");
-  const actions = document.getElementById("forgot-modal-actions");
-  body.innerHTML = "";
-  if (adminUser && adminUser.mustReset) {
-    title.textContent = "Reset already pending";
-    body.textContent = "The admin login was already reset and is waiting for a new username and password to be set. Sign in as admin to finish setting it up — resetting again isn't needed.";
-    actions.innerHTML = '<button class="btn btn-primary" style="flex:1" onclick="cancelForgotPassword()">Got it</button>';
-  } else {
-    title.textContent = "Reset admin login?";
-    body.textContent = "This resets the admin login. You will need to sign in and choose a brand new username and password right away. Team accounts (user1–user4) are not affected by this — they should contact the admin to reset their own password.";
-    actions.innerHTML = '<button class="btn btn-ghost" onclick="cancelForgotPassword()">Cancel</button>' +
-      '<button class="btn btn-primary" id="forgot-confirm-btn" onclick="confirmForgotPassword()">Reset admin</button>';
-  }
+  document.getElementById("forgot-modal-title").textContent = "Send password reset email?";
+  document.getElementById("forgot-modal-body").textContent = "We'll email a password reset link to " + email + ".";
+  document.getElementById("forgot-modal-actions").innerHTML =
+    '<button class="btn btn-ghost" onclick="cancelForgotPassword()">Cancel</button>' +
+    '<button class="btn btn-primary" id="forgot-confirm-btn" onclick="confirmForgotPassword()">Send reset email</button>';
   document.getElementById("forgot-modal").classList.add("show");
 }
 window.showForgotPassword = showForgotPassword;
@@ -1250,33 +1053,55 @@ function cancelForgotPassword() {
 }
 window.cancelForgotPassword = cancelForgotPassword;
 
-function confirmForgotPassword() {
+async function confirmForgotPassword() {
+  const email = document.getElementById("login-username").value.trim();
   const btn = document.getElementById("forgot-confirm-btn");
-  if (btn) { btn.disabled = true; btn.textContent = "Resetting…"; }
-  setTimeout(function () {
-    document.getElementById("forgot-modal").classList.remove("show");
-    const adminUser = state.users.find(u => u.role === "admin");
-    if (adminUser) {
-      adminUser.username = "admin";
-      adminUser.password = "admin";
-      adminUser.mustReset = true;
-    } else {
-      state.users.unshift({ username: "admin", password: "admin", role: "admin", mustReset: true });
-    }
-    persistUsers();
-    updateResetWarningBadge();
-    const successBox = document.getElementById("forgot-success");
-    successBox.textContent = "Admin login reset. Username: •••••••• Password: •••••••• — sign in to set a new username and password. Team members: please contact admin to reset your password.";
-    successBox.classList.add("show");
-    document.getElementById("login-username").value = "";
-    document.getElementById("login-password").value = "";
-  }, 600);
+  if (btn) { btn.disabled = true; btn.textContent = "Sending…"; }
+  try {
+    await sb.auth.resetPasswordForEmail(email);
+  } catch (e) { console.error(e); }
+  document.getElementById("forgot-modal").classList.remove("show");
+  const successBox = document.getElementById("forgot-success");
+  successBox.textContent = "If " + email + " belongs to a registered admin, a reset link is on its way.";
+  successBox.classList.add("show");
 }
 window.confirmForgotPassword = confirmForgotPassword;
 
-function initLoginScreen() {
+// ---------- Realtime: both admins see each other's changes without refreshing ----------
+let liveChannel = null;
+function subscribeToLiveUpdates() {
+  if (liveChannel) return;
+  liveChannel = sb.channel("rkalpine-live")
+    .on("postgres_changes", { event: "*", schema: "public", table: "invoices" }, refreshInvoicesQuietly)
+    .on("postgres_changes", { event: "*", schema: "public", table: "invoice_items" }, refreshInvoicesQuietly)
+    .on("postgres_changes", { event: "*", schema: "public", table: "catalog_items" }, refreshCatalogQuietly)
+    .subscribe();
+}
+function unsubscribeFromLiveUpdates() {
+  if (liveChannel) { sb.removeChannel(liveChannel); liveChannel = null; }
+}
+let refreshQueued = false;
+async function refreshInvoicesQuietly() {
+  if (refreshQueued) return;
+  refreshQueued = true;
+  setTimeout(async () => {
+    refreshQueued = false;
+    try {
+      state.invoices = await fetchInvoices();
+      state.deletedInvoices = await fetchDeletedInvoices();
+      if (state.page === "list" || state.page === "dashboard" || state.page === "sales") render();
+    } catch (e) { console.error(e); }
+  }, 400);
+}
+async function refreshCatalogQuietly() {
+  try {
+    state.catalogItems = await fetchCatalogItems();
+    if (state.page === "items") render();
+  } catch (e) { console.error(e); }
+}
+
+async function initLoginScreen() {
   document.getElementById("login-logo").src = LOGO_INVOICE_SRC;
-  document.getElementById("force-change-logo").src = LOGO_INVOICE_SRC;
   document.getElementById("login-title-name").textContent = state.company.name;
   document.querySelectorAll(".pw-toggle").forEach(function (btn) {
     if (!btn.innerHTML) btn.innerHTML = icon("eye", 16);
@@ -1287,25 +1112,25 @@ function initLoginScreen() {
   document.getElementById("login-username").addEventListener("keydown", function (e) {
     if (e.key === "Enter") document.getElementById("login-password").focus();
   });
-  document.getElementById("force-password-confirm").addEventListener("keydown", function (e) {
-    if (e.key === "Enter") submitForceChange();
-  });
   updateLoginBlockedBanner();
-  updateResetWarningBadge();
-  setInterval(function () { updateLoginBlockedBanner(); updateResetWarningBadge(); }, 1000);
-  let alreadyIn = false, savedRole = null, savedUser = null;
+  setInterval(updateLoginBlockedBanner, 1000);
+
+  // Resume an existing Supabase session, if any, without asking to sign in again.
   try {
-    alreadyIn = sessionStorage.getItem(SESSION_KEY) === "1";
-    savedRole = sessionStorage.getItem(SESSION_ROLE_KEY);
-    savedUser = sessionStorage.getItem(SESSION_USER_KEY);
-  } catch (e) {}
-  if (alreadyIn && savedRole) {
-    state.role = savedRole;
-    state.currentUsername = savedUser;
-    showApp();
-  } else {
-    document.getElementById("login-username").focus();
-  }
+    const { data: { session } } = await sb.auth.getSession();
+    if (session && session.user) {
+      const admin = await fetchCurrentAdminProfile(session.user.id);
+      if (admin) {
+        state.currentAdmin = admin;
+        await loadAllData();
+        showApp();
+        return;
+      } else {
+        await sb.auth.signOut();
+      }
+    }
+  } catch (e) { console.error(e); }
+  document.getElementById("login-username").focus();
 }
 
 function goto_(page, id) {
@@ -1330,7 +1155,8 @@ function duplicateInvoice(id) {
   copy.status = "unpaid";
   copy.amountPaid = 0;
   copy.items = copy.items.map(it => Object.assign({}, it, { id: uid() }));
-  copy.issuedBy = state.currentUsername || copy.issuedBy;
+  copy.issuedBy = state.currentAdmin ? state.currentAdmin.name : copy.issuedBy;
+  copy.issuedById = state.currentAdmin ? state.currentAdmin.id : null;
   state.draft = copy;
   state.activeId = null;
   state.page = "new";
@@ -1341,40 +1167,43 @@ function duplicateInvoice(id) {
 }
 window.duplicateInvoice = duplicateInvoice;
 
-function deleteInvoice(id) {
+async function deleteInvoice(id) {
   const inv = state.invoices.find(i => i.id === id);
   if (!inv) return;
   if (!confirm("Delete invoice " + inv.number + "?")) return;
-  state.invoices = state.invoices.filter(i => i.id !== id);
-  state.deletedInvoices.push({ invoice: inv, deletedAt: new Date().toISOString(), deletedBy: state.currentUsername || "unknown" });
-  persistInvoices();
-  persistDeletedInvoices();
-  render();
-  showToast("Invoice deleted successfully");
+  try {
+    await softDeleteInvoiceInDb(id);
+    state.invoices = state.invoices.filter(i => i.id !== id);
+    state.deletedInvoices.unshift({ invoice: inv, deletedAt: new Date().toISOString(), deletedBy: state.currentAdmin ? state.currentAdmin.name : "unknown" });
+    render();
+    showToast("Invoice deleted successfully");
+  } catch (e) { console.error(e); showToast("Couldn't delete — try again"); }
 }
 window.deleteInvoice = deleteInvoice;
 
-function restoreInvoice(id) {
+async function restoreInvoice(id) {
   const rec = state.deletedInvoices.find(d => d.invoice.id === id);
   if (!rec) return;
-  state.deletedInvoices = state.deletedInvoices.filter(d => d.invoice.id !== id);
-  state.invoices.push(rec.invoice);
-  persistInvoices();
-  persistDeletedInvoices();
-  render();
-  showToast("Invoice " + rec.invoice.number + " restored");
+  try {
+    await restoreInvoiceInDb(id);
+    state.deletedInvoices = state.deletedInvoices.filter(d => d.invoice.id !== id);
+    state.invoices.unshift(rec.invoice);
+    render();
+    showToast("Invoice " + rec.invoice.number + " restored");
+  } catch (e) { console.error(e); showToast("Couldn't restore — try again"); }
 }
 window.restoreInvoice = restoreInvoice;
 
-function permanentlyDeleteInvoice(id) {
+async function permanentlyDeleteInvoice(id) {
   const rec = state.deletedInvoices.find(d => d.invoice.id === id);
   if (!rec) return;
   if (!confirm("Permanently delete invoice " + rec.invoice.number + "? This cannot be undone.")) return;
-  state.deletedInvoices = state.deletedInvoices.filter(d => d.invoice.id !== id);
-  persistDeletedInvoices();
-  hardDeleteInvoiceRow(id);
-  render();
-  showToast("Invoice permanently deleted");
+  try {
+    await permanentlyDeleteInvoiceInDb(id);
+    state.deletedInvoices = state.deletedInvoices.filter(d => d.invoice.id !== id);
+    render();
+    showToast("Invoice permanently deleted");
+  } catch (e) { console.error(e); showToast("Couldn't delete — try again"); }
 }
 window.permanentlyDeleteInvoice = permanentlyDeleteInvoice;
 
@@ -1531,7 +1360,7 @@ function updateClientDueInfo() {
 }
 window.updateClientDueInfo = updateClientDueInfo;
 
-function saveDraft() {
+async function saveDraft() {
   const err = validateDraft(state.draft);
   if (err) {
     formError = err;
@@ -1541,19 +1370,29 @@ function saveDraft() {
   formError = null;
   const exists = state.invoices.some(i => i.id === state.draft.id);
   const wasNew = !exists;
-  if (exists) state.invoices = state.invoices.map(i => i.id === state.draft.id ? state.draft : i);
-  else {
-    // Re-derive the number right at save time (rather than trusting whatever the form
-    // was showing) so two drafts opened around the same time can never collide.
-    state.draft.number = consumeInvoiceNumber();
-    state.invoices.push(state.draft);
+  if (wasNew && state.currentAdmin) {
+    state.draft.issuedBy = state.currentAdmin.name;
+    state.draft.issuedById = state.currentAdmin.id;
   }
-  persistInvoices();
-  state.activeId = state.draft.id;
-  state.draft = null;
-  state.page = "list";
-  render();
-  showToast(wasNew ? "Invoice created" : "Invoice updated");
+  const btn = document.getElementById("save-draft-btn");
+  if (btn) { btn.disabled = true; btn.innerHTML = icon("check", 15) + " Saving…"; }
+  try {
+    // Re-derive the number right at save time via a Postgres sequence (rather than trusting
+    // whatever the form was showing), so two admins saving at the exact same moment always
+    // get two different numbers — the database, not the browser, hands out the number.
+    await saveInvoiceToDb(state.draft, wasNew);
+    if (exists) state.invoices = state.invoices.map(i => i.id === state.draft.id ? state.draft : i);
+    else state.invoices.unshift(state.draft);
+    state.activeId = state.draft.id;
+    state.draft = null;
+    state.page = "list";
+    render();
+    showToast(wasNew ? "Invoice created" : "Invoice updated");
+  } catch (e) {
+    console.error(e);
+    showToast("Couldn't save the invoice — try again");
+    if (btn) { btn.disabled = false; btn.innerHTML = icon("check", 15) + " Save invoice"; }
+  }
 }
 window.saveDraft = saveDraft;
 
@@ -1581,9 +1420,9 @@ window.setDraftDiscountType = setDraftDiscountType;
 
 let autofocusClientName = false;
 let savedFlashTimeout = null;
-function saveCompanyForm() {
+async function saveCompanyForm() {
   const f = document.getElementById("settings-form");
-  state.company = {
+  const next = {
     name: f.querySelector('[data-k="name"]').value,
     nameNe: f.querySelector('[data-k="nameNe"]').value,
     address: f.querySelector('[data-k="address"]').value,
@@ -1592,72 +1431,89 @@ function saveCompanyForm() {
     email: f.querySelector('[data-k="email"]').value,
     pan: f.querySelector('[data-k="pan"]').value,
   };
-  persistCompany();
   const btn = document.getElementById("settings-save-btn");
-  btn.innerHTML = icon("check", 15) + " Saved";
-  clearTimeout(savedFlashTimeout);
-  savedFlashTimeout = setTimeout(() => { btn.innerHTML = icon("check", 15) + " Save changes"; }, 1800);
-  renderTopbar();
-  showToast("Company details saved");
+  try {
+    await saveCompanyToDb(next);
+    state.company = next;
+    btn.innerHTML = icon("check", 15) + " Saved";
+    clearTimeout(savedFlashTimeout);
+    savedFlashTimeout = setTimeout(() => { btn.innerHTML = icon("check", 15) + " Save changes"; }, 1800);
+    renderTopbar();
+    showToast("Company details saved");
+  } catch (e) {
+    console.error(e);
+    showToast("Couldn't save — try again");
+  }
 }
 window.saveCompanyForm = saveCompanyForm;
 
+// ---------- Admins tab ----------
+// Exactly 2 admin accounts exist, created ahead of time in the Supabase
+// dashboard (Authentication -> Users) and linked via the `admins` table.
+// From here, each admin can only rename themselves (the display name used
+// on "Issued by") or trigger a password-reset email for either account —
+// there's no way to add, remove, or otherwise get to a 3rd admin from the UI.
 let usersSavedFlashTimeout = null;
-function saveUsersForm() {
+async function saveUsersForm() {
   const f = document.getElementById("users-form");
-  const rows = f.querySelectorAll("[data-role]");
-  const next = [];
-  rows.forEach((row, idx) => {
-    const role = row.getAttribute("data-role");
-    const username = row.querySelector('[data-field="username"]').value.trim();
-    const password = row.querySelector('[data-field="password"]').value;
-    const existing = state.users[idx];
-    next.push({ username, password, role, mustReset: existing ? !!existing.mustReset : false });
-  });
-  state.users = next;
-  persistUsers();
-  // keep the current session in sync if the logged-in admin just changed their own username
-  const stillValid = findUser(state.currentUsername);
-  if (!stillValid) { state.currentUsername = (next.find(u => u.role === "admin") || {}).username || null; }
+  const rows = f.querySelectorAll("[data-admin-id]");
   const btn = document.getElementById("users-save-btn");
-  btn.innerHTML = icon("check", 15) + " Saved";
-  clearTimeout(usersSavedFlashTimeout);
-  usersSavedFlashTimeout = setTimeout(() => { btn.innerHTML = icon("check", 15) + " Save accounts"; }, 1800);
-  showToast("User accounts saved");
+  try {
+    for (const row of rows) {
+      const id = row.getAttribute("data-admin-id");
+      const name = row.querySelector('[data-field="name"]').value.trim();
+      if (id === (state.currentAdmin || {}).id) {
+        await saveAdminNameToDb(id, name);
+      }
+    }
+    state.admins = await fetchAdmins();
+    if (state.currentAdmin) {
+      const me = state.admins.find(a => a.id === state.currentAdmin.id);
+      if (me) state.currentAdmin.name = me.name;
+    }
+    btn.innerHTML = icon("check", 15) + " Saved";
+    clearTimeout(usersSavedFlashTimeout);
+    usersSavedFlashTimeout = setTimeout(() => { btn.innerHTML = icon("check", 15) + " Save"; }, 1800);
+    render();
+    showToast("Admin details saved");
+  } catch (e) {
+    console.error(e);
+    showToast("Couldn't save — try again");
+  }
 }
 window.saveUsersForm = saveUsersForm;
 
-let pendingResetUserIdx = null;
-
-function showResetUserModal(idx) {
-  pendingResetUserIdx = idx;
-  const u = state.users[idx];
-  document.getElementById("reset-user-title").textContent = "Reset " + u.username + "'s login?";
+let pendingResetAdminId = null;
+function showResetUserModal(id) {
+  pendingResetAdminId = id;
+  const a = state.admins.find(x => x.id === id);
+  if (!a) return;
+  document.getElementById("reset-user-title").textContent = "Send password reset to " + a.name + "?";
   document.getElementById("reset-user-body").innerHTML =
-    'This resets <strong>' + esc(u.username) + '</strong>\'s username and password back to defaults. ' +
-    'The next time they sign in, they\'ll be required to set a new username and password before they can continue — same as they can\'t use the old ones anymore.';
+    "We'll email a password reset link to <strong>" + esc(a.email) + "</strong>. Their current password keeps working until they use the link.";
   document.getElementById("reset-user-modal").classList.add("show");
 }
 window.showResetUserModal = showResetUserModal;
 
 function cancelResetUser() {
   document.getElementById("reset-user-modal").classList.remove("show");
-  pendingResetUserIdx = null;
+  pendingResetAdminId = null;
 }
 window.cancelResetUser = cancelResetUser;
 
-function confirmResetUser() {
-  if (pendingResetUserIdx === null) return;
-  const u = state.users[pendingResetUserIdx];
-  const label = u.username;
-  u.username = "user" + pendingResetUserIdx;
-  u.password = "12345";
-  u.mustReset = true;
-  persistUsers();
+async function confirmResetUser() {
+  if (!pendingResetAdminId) return;
+  const a = state.admins.find(x => x.id === pendingResetAdminId);
   document.getElementById("reset-user-modal").classList.remove("show");
-  pendingResetUserIdx = null;
-  render();
-  showToast(label + "'s login was reset");
+  if (!a) return;
+  try {
+    await sb.auth.resetPasswordForEmail(a.email);
+    showToast("Reset email sent to " + a.name);
+  } catch (e) {
+    console.error(e);
+    showToast("Couldn't send reset email — try again");
+  }
+  pendingResetAdminId = null;
 }
 window.confirmResetUser = confirmResetUser;
 
@@ -1761,7 +1617,7 @@ function emptyState(title, body, actionLabel, actionOnClick) {
 }
 
 function renderDashboard() {
-  const welcomeHtml = '<div style="margin-bottom:20px"><div style="font-family:Georgia,serif;font-weight:700;font-size:18px;color:var(--charcoal)">Welcome, ' + esc(state.currentUsername || "there") + '</div></div>';
+  const welcomeHtml = '<div style="margin-bottom:20px"><div style="font-family:Georgia,serif;font-weight:700;font-size:18px;color:var(--charcoal)">Welcome, ' + esc((state.currentAdmin || {}).name || "there") + '</div></div>';
   if (state.invoices.length === 0) {
     return welcomeHtml + emptyState("No invoices yet", "Once you raise your first invoice, this page fills in with revenue, outstanding payments, and which clients matter most.", "Create your first invoice", "goto_('new')");
   }
@@ -1987,19 +1843,29 @@ function handleCatalogPhoto(input) {
   reader.readAsDataURL(file);
 }
 window.handleCatalogPhoto = handleCatalogPhoto;
-function saveCatalogDraft() {
+async function saveCatalogDraft() {
   const it = state.catalogDraft;
   if (!(it.name || "").trim()) { showToast("Item name is required"); return; }
-  const idx = state.catalogItems.findIndex(c => c.id === it.id);
-  if (idx === -1) state.catalogItems.push(it); else state.catalogItems[idx] = it;
-  persistCatalogItems();
-  goto_("items");
+  try {
+    await saveCatalogItemToDb(it);
+    const idx = state.catalogItems.findIndex(c => c.id === it.id);
+    if (idx === -1) state.catalogItems.push(it); else state.catalogItems[idx] = it;
+    goto_("items");
+  } catch (e) {
+    console.error(e);
+    showToast("Couldn't save the item — try again");
+  }
 }
 window.saveCatalogDraft = saveCatalogDraft;
-function deleteCatalogItem(id) {
-  state.catalogItems = state.catalogItems.filter(c => c.id !== id);
-  persistCatalogItems();
-  render();
+async function deleteCatalogItem(id) {
+  try {
+    await deleteCatalogItemFromDb(id);
+    state.catalogItems = state.catalogItems.filter(c => c.id !== id);
+    render();
+  } catch (e) {
+    console.error(e);
+    showToast("Couldn't delete the item — try again");
+  }
 }
 window.deleteCatalogItem = deleteCatalogItem;
 
@@ -2258,7 +2124,7 @@ function renderForm() {
     '</div></div>';
 
   html += '<div class="form-footer"><button class="btn btn-ghost" onclick="' + (state.invoices.some(i => i.id === inv.id) ? "goto_('view','" + inv.id + "')" : "goto_('list')") + '">Cancel</button>' +
-    '<button class="btn btn-primary" onclick="saveDraft()">' + icon("check", 15) + ' Save invoice</button></div>';
+    '<button class="btn btn-primary" id="save-draft-btn" onclick="saveDraft()">' + icon("check", 15) + ' Save invoice</button></div>';
   html += '</div>';
   return html;
 }
@@ -2346,7 +2212,7 @@ function setSettingsTab(tab) { state.settingsTab = tab; render(); }
 window.setSettingsTab = setSettingsTab;
 
 function renderSettingsTabs() {
-  const tabs = [["company", "Company"], ["users", icon("users", 13) + " User accounts"], ["deleted", icon("trash", 13) + " Deleted invoices" + (state.deletedInvoices.length ? ' <span class="tab-count">' + state.deletedInvoices.length + '</span>' : '')]];
+  const tabs = [["company", "Company"], ["users", icon("users", 13) + " Admins"], ["deleted", icon("trash", 13) + " Deleted invoices" + (state.deletedInvoices.length ? ' <span class="tab-count">' + state.deletedInvoices.length + '</span>' : '')]];
   return '<div class="settings-tabs">' + tabs.map(([k, label]) =>
     '<button type="button" class="settings-tab' + (state.settingsTab === k ? ' active' : '') + '" onclick="setSettingsTab(\'' + k + '\')">' + label + '</button>'
   ).join('') + '</div>';
@@ -2366,26 +2232,25 @@ function renderCompanyTab() {
 
 function renderUsersTab() {
   let html = '<div class="settings-card">' +
-    '<div class="section-title">' + icon("users", 15) + ' User accounts</div>' +
-    '<p class="settings-intro">The admin account can open Settings. The four team accounts can create and manage invoices, but Settings stays locked for them.</p>' +
+    '<div class="section-title">' + icon("users", 15) + ' Admins</div>' +
+    '<p class="settings-intro">Exactly 2 admins can sign in to this site — both have identical, full access to every invoice and setting. Accounts are created in the Supabase dashboard; from here you can rename yourself (the name shown as "Issued by" on invoices) or send a password reset email to either admin.</p>' +
     '<div id="users-form" style="display:flex;flex-direction:column;gap:16px;margin-top:16px">';
 
-  state.users.forEach((u, idx) => {
-    const label = u.role === "admin" ? "Admin" : u.username.charAt(0).toUpperCase() + u.username.slice(1) || "Team account";
-    html += '<div data-role="' + u.role + '" style="border:1px solid var(--line);border-radius:8px;padding:14px">' +
+  state.admins.forEach(a => {
+    const isMe = state.currentAdmin && a.id === state.currentAdmin.id;
+    html += '<div data-admin-id="' + a.id + '" style="border:1px solid var(--line);border-radius:8px;padding:14px">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
-      '<div style="font-size:11.5px;font-weight:700;color:' + (u.role === "admin" ? "var(--orange)" : "var(--slate)") + ';text-transform:uppercase;letter-spacing:0.04em">' + esc(u.role === "admin" ? "Admin (full access)" : label + " (no Settings access)") + '</div>' +
-      (u.mustReset ? '<span style="font-size:10.5px;font-weight:700;color:var(--rust-deep);background:var(--rust-soft);padding:2px 8px;border-radius:999px">Reset pending</span>' : '') +
+      '<div style="font-size:11.5px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:0.04em">' + (isMe ? "You" : "Other admin") + '</div>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
-      '<div><label class="field-label">Username</label><input class="field-input" data-field="username" value="' + esc(u.username) + '"/></div>' +
-      '<div><label class="field-label">Password</label><div class="pw-wrap"><input class="field-input" type="password" data-field="password" value="' + esc(u.password) + '"/><button type="button" class="pw-toggle" onclick="togglePw(this)" tabindex="-1">' + icon("eye", 16) + '</button></div></div>' +
+      '<div><label class="field-label">Display name</label><input class="field-input" data-field="name" value="' + esc(a.name) + '"' + (isMe ? '' : ' disabled') + '/></div>' +
+      '<div><label class="field-label">Email</label><input class="field-input" value="' + esc(a.email) + '" disabled/></div>' +
       '</div>' +
-      (u.role !== "admin" ? '<button type="button" class="btn btn-ghost" style="margin-top:10px;font-size:12px;padding:6px 12px" onclick="showResetUserModal(' + idx + ')">' + icon("alertTriangle", 13) + ' Reset this account</button>' : '') +
+      '<button type="button" class="btn btn-ghost" style="margin-top:10px;font-size:12px;padding:6px 12px" onclick="showResetUserModal(\'' + a.id + '\')">' + icon("alertTriangle", 13) + ' Send password reset email</button>' +
       '</div>';
   });
 
-  html += '</div><button class="btn btn-primary" id="users-save-btn" style="margin-top:16px" onclick="saveUsersForm()">' + icon("check", 15) + ' Save accounts</button></div>';
+  html += '</div><button class="btn btn-primary" id="users-save-btn" style="margin-top:16px" onclick="saveUsersForm()">' + icon("check", 15) + ' Save</button></div>';
   return html;
 }
 
@@ -2423,13 +2288,6 @@ function renderDeletedTab() {
 function money_fmt_safe(inv) { try { return fmt(invoiceTotals(inv).total); } catch (e) { return "—"; } }
 
 function renderSettings() {
-  if (state.role !== "admin") {
-    return '<div class="card" style="max-width:480px;border-color:var(--rust);border-top:3px solid var(--rust)">' +
-      '<div class="section-title" style="color:var(--rust-deep)">' + icon("alertTriangle", 15) + ' Access denied</div>' +
-      '<p style="font-size:13.5px;color:var(--charcoal-soft);margin-top:10px;line-height:1.6">' +
-      'Only the admin account can open Settings. You are signed in as <strong>' + esc(state.currentUsername || "a team account") + '</strong>. ' +
-      'Ask the admin to make changes here, or sign in with the admin account instead.</p></div>';
-  }
   const tabFns = { company: renderCompanyTab, users: renderUsersTab, deleted: renderDeletedTab };
   return renderSettingsTabs() + (tabFns[state.settingsTab] || renderCompanyTab)();
 }
