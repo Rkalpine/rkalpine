@@ -24,6 +24,7 @@
     --green: #2B5D3F; --green-deep: #1E4530; --green-soft: rgba(43,93,63,0.10);
     --amber: #C9932F; --amber-deep: #A5761E; --amber-soft: rgba(201,147,47,0.14);
     --slate: #C15A2C; --rust: #C15A2C; --rust-deep: #9A431E; --rust-soft: rgba(193,90,44,0.12);
+    --red: #C23B3B; --red-deep: #9C2626; --red-soft: rgba(194,59,59,0.12);
     --line: #E4DCC9; --line-soft: #EEE7D6;
     --shadow-sm: 0 1px 2px rgba(43,42,38,0.05), 0 1px 1px rgba(43,42,38,0.04);
     --shadow-md: 0 6px 20px rgba(43,42,38,0.08);
@@ -60,6 +61,8 @@
   .btn { display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; border-radius: 8px; border: none;
     font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease; }
   .btn:active { transform: translateY(1px); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; transform: none; }
+  .btn:disabled:hover { background: var(--orange); }
   .btn-primary { background: var(--orange); color: #fff; box-shadow: var(--shadow-sm); }
   .btn-primary:hover { background: var(--orange-deep); box-shadow: var(--shadow-md); }
   .btn-ghost { background: #fff; color: var(--charcoal); border: 1px solid var(--line); }
@@ -90,9 +93,9 @@
 
   .pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
   .pill.paid { background: var(--green-soft); color: var(--green-deep); }
-  .pill.unpaid { background: var(--amber-soft); color: var(--amber-deep); }
+  .pill.unpaid { background: var(--red-soft); color: var(--red-deep); }
   .dot { width: 6px; height: 6px; border-radius: 50%; }
-  .dot.paid { background: var(--green); } .dot.unpaid { background: var(--amber); }
+  .dot.paid { background: var(--green); } .dot.unpaid { background: var(--red); }
 
   .grid-2 { display: flex; gap: 20px; flex-wrap: wrap; }
   .col-wide { flex: 2 1 420px; } .col-narrow { flex: 1 1 260px; }
@@ -130,6 +133,15 @@
 
   .table-wrap { background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-sm); }
   .t-head, .t-row { display: grid; grid-template-columns: 1.1fr 1.6fr 1fr 1fr 0.9fr 130px; align-items: center; }
+  .t-row { position: relative; transition: background 0.15s ease; border-left: 3px solid transparent; }
+  .t-row::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+  .t-row.row-paid::before { background: var(--green); }
+  .t-row.row-unpaid::before { background: var(--red); }
+  .t-row:hover { background: var(--paper-dim); }
+  .t-client-wrap { display: flex; align-items: center; gap: 9px; min-width: 0; }
+  .t-avatar { width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; font-family: Georgia, serif; color: #fff; }
+  .invoice-count-badge { font-size: 12.5px; color: var(--charcoal-soft); font-weight: 600; margin: 2px 0 12px; }
 
   .sheet-wrap { background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow-x: auto; box-shadow: var(--shadow-sm); }
   table.sheet { border-collapse: collapse; width: 100%; min-width: 1080px; font-size: 12.5px; }
@@ -178,13 +190,25 @@
   .status-toggle { display: flex; gap: 6px; background: var(--paper-dim); border-radius: 8px; padding: 3px; }
   .status-btn { padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 12.5px; font-weight: 600;
     background: transparent; color: var(--charcoal-soft); font-family: inherit; }
-  .status-btn.active-unpaid { background: #fff; color: var(--amber); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .status-btn.active-unpaid { background: #fff; color: var(--red); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
   .status-btn.active-paid { background: #fff; color: var(--green); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
   .vat-toggle { display: flex; gap: 5px; background: var(--paper-dim); border-radius: 8px; padding: 3px; margin-bottom: 10px; }
   .vat-btn { padding: 6px 10px; border-radius: 6px; border: none; cursor: pointer; font-size: 11.5px; font-weight: 600;
-    background: transparent; color: var(--charcoal-soft); font-family: inherit; flex: 1; text-align: center; }
+    background: transparent; color: var(--charcoal-soft); font-family: inherit; flex: 1; text-align: center; transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease; }
   .vat-btn.active { background: #fff; color: var(--slate); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
   .vat-note { font-size: 11px; color: var(--charcoal-soft); margin-bottom: 8px; line-height: 1.4; }
+
+  /* Status filter bar at the top of the Invoices section — All / Unpaid (red) / Paid (green) */
+  .status-filter-bar { display: flex; gap: 8px; background: #fff; border: 1px solid var(--line); border-radius: 10px;
+    padding: 5px; box-shadow: var(--shadow-sm); margin-bottom: 0; }
+  .status-filter-btn { flex: 1; }
+  .status-filter-btn.status-filter-all { color: var(--charcoal-soft); }
+  .status-filter-btn.status-filter-all.active { background: var(--charcoal); color: #fff; box-shadow: var(--shadow-sm); }
+  .status-filter-btn.status-filter-unpaid { color: var(--red-deep); }
+  .status-filter-btn.status-filter-unpaid.active { background: var(--red); color: #fff; box-shadow: 0 3px 10px rgba(194,59,59,0.28); }
+  .status-filter-btn.status-filter-paid { color: var(--green-deep); }
+  .status-filter-btn.status-filter-paid.active { background: var(--green); color: #fff; box-shadow: 0 3px 10px rgba(43,93,63,0.28); }
+  .status-filter-count { font-size: 10.5px; font-weight: 700; opacity: 0.75; margin-left: 4px; }
 
   .items-table { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin-bottom: 6px; }
   .items-head { display: grid; grid-template-columns: 0.7fr 92px 56px 70px 100px 26px; gap: 6px; background: var(--paper-dim);
@@ -1236,8 +1260,15 @@ window.permanentlyDeleteInvoice = permanentlyDeleteInvoice;
 
 let formError = null;
 
+function invoiceHasProduct(inv) {
+  return !!(inv && (inv.items || []).some(it => it.catalogId));
+}
+function canSaveInvoice(inv) {
+  return !!(inv && (inv.clientName || "").trim() && invoiceHasProduct(inv));
+}
 function validateDraft(inv) {
   if (!inv.clientName || !inv.clientName.trim()) return "Client name is required.";
+  if (!invoiceHasProduct(inv)) return "Add at least one product to the invoice before saving.";
   const pan = (inv.clientPan || "").trim();
   if (pan !== "" && !/^\d+$/.test(pan)) return "Client PAN must contain digits only.";
   const phone = (inv.clientPhone || "").trim();
@@ -1293,6 +1324,14 @@ function liveValidateClientName() {
   setFieldError("err-clientName", "in-clientName", v === "" ? "Required." : "");
 }
 window.liveValidateClientName = liveValidateClientName;
+function updateSaveButtonState() {
+  const btn = document.getElementById("save-draft-btn");
+  if (!btn || !state.draft) return;
+  const ok = canSaveInvoice(state.draft);
+  btn.disabled = !ok;
+  btn.title = ok ? "" : "Enter the client name and add at least one product to save this bill.";
+}
+window.updateSaveButtonState = updateSaveButtonState;
 
 function getKnownClientNames() {
   const seen = {};
@@ -1798,12 +1837,17 @@ function renderListBody() {
       ? emptyState("No invoices yet", "Create your first invoice to start building your records.", "Create your first invoice", "goto_('new')")
       : emptyState("No matches", "Try a different search term or filter.", null, "");
   }
-  let html = '<div class="table-wrap"><div class="t-head"><div>Invoice</div><div>Client</div><div>Date</div><div>Amount</div><div>Status</div><div></div></div>';
+  let html = '<div class="invoice-count-badge">' + sorted.length + ' invoice' + (sorted.length === 1 ? "" : "s") + (listStatusFilter !== "all" ? ' · ' + (listStatusFilter === "paid" ? "paid" : "unpaid") : "") + '</div>';
+  html += '<div class="table-wrap"><div class="t-head"><div>Invoice</div><div>Client</div><div>Date</div><div>Amount</div><div>Status</div><div></div></div>';
   sorted.forEach(inv => {
     const total = invoiceTotals(inv).total;
-    html += '<div class="t-row">' +
+    const name = inv.clientName || "—";
+    const initial = name.trim() ? name.trim()[0].toUpperCase() : "?";
+    const avatarColor = inv.status === "paid" ? "var(--green)" : "var(--red)";
+    html += '<div class="t-row row-' + inv.status + '">' +
       '<div class="t-num" onclick="goto_(\'view\',\'' + inv.id + '\')">' + esc(inv.number) + '</div>' +
-      '<div class="t-client">' + esc(inv.clientName || "—") + '</div>' +
+      '<div class="t-client-wrap"><span class="t-avatar" style="background:' + avatarColor + '">' + esc(initial) + '</span>' +
+      '<span class="t-client">' + esc(name) + '</span></div>' +
       '<div class="t-date">' + esc(inv.date) + '</div>' +
       '<div class="t-amt">' + fmt(total) + '</div>' +
       '<div><span class="pill ' + inv.status + '"><span class="dot ' + inv.status + '"></span>' + (inv.status === "paid" ? "Paid" : "Unpaid") + '</span></div>' +
@@ -1822,16 +1866,17 @@ function renderListBodyOnly() {
   if (filterBar) filterBar.innerHTML = listFilterButtonsHtml();
 }
 function listFilterButtonsHtml() {
+  const counts = { all: state.invoices.length, unpaid: state.invoices.filter(i => i.status === "unpaid").length, paid: state.invoices.filter(i => i.status === "paid").length };
   const opts = [["all", "All"], ["unpaid", "Unpaid"], ["paid", "Paid"]];
   return opts.map(([val, label]) =>
-    '<button class="vat-btn ' + (listStatusFilter === val ? "active" : "") + '" onclick="setListStatusFilter(\'' + val + '\')">' + label + '</button>'
+    '<button type="button" class="vat-btn status-filter-btn status-filter-' + val + (listStatusFilter === val ? " active" : "") + '" onclick="setListStatusFilter(\'' + val + '\')">' +
+    label + '<span class="status-filter-count">' + counts[val] + '</span></button>'
   ).join("");
 }
 function renderList() {
-  return '<div class="toolbar"><div class="search-wrap">' + icon("search", 15) +
-    '<input class="search-input" placeholder="Search client or invoice no." oninput="onSearchInput(this.value)" value="' + esc(searchQuery) + '"/></div>' +
-    '<div class="vat-toggle" id="list-filter-bar" style="margin-bottom:0">' + listFilterButtonsHtml() + '</div>' +
-    '<button class="btn btn-primary" onclick="goto_(\'new\')">' + icon("plusCircle", 16) + ' New invoice</button></div>' +
+  return '<div class="status-filter-bar" id="list-filter-bar">' + listFilterButtonsHtml() + '</div>' +
+    '<div class="toolbar" style="margin-top:14px"><div class="search-wrap">' + icon("search", 15) +
+    '<input class="search-input" placeholder="Search client or invoice no." oninput="onSearchInput(this.value)" value="' + esc(searchQuery) + '"/></div></div>' +
     '<div id="list-body">' + renderListBody() + '</div>';
 }
 
@@ -2081,7 +2126,7 @@ function renderForm() {
     '<button class="status-btn ' + (inv.status === "paid" ? "active-paid" : "") + '" onclick="setDraftStatus(\'paid\')">Paid</button></div></div>';
 
   html += '<div class="form-grid">';
-  html += '<div><label class="field-label">Client name *</label><input class="field-input" id="in-clientName" list="client-datalist" value="' + esc(inv.clientName) + '" placeholder="e.g. Himal Traders" oninput="updateDraftField(\'clientName\',this.value); liveValidateClientName(); updateClientDueInfo();" onblur="fillClientDetailsIfKnown()"/><div class="field-error" id="err-clientName"></div>' +
+  html += '<div><label class="field-label">Client name *</label><input class="field-input" id="in-clientName" list="client-datalist" value="' + esc(inv.clientName) + '" placeholder="e.g. Himal Traders" oninput="updateDraftField(\'clientName\',this.value); liveValidateClientName(); updateClientDueInfo(); updateSaveButtonState();" onblur="fillClientDetailsIfKnown()"/><div class="field-error" id="err-clientName"></div>' +
     '<datalist id="client-datalist">' + getKnownClientNames().map(n => '<option value="' + esc(n) + '"></option>').join("") + '</datalist></div>';
   html += '<div><label class="field-label">Client PAN</label><input class="field-input" id="in-clientPan" value="' + esc(inv.clientPan) + '" placeholder="e.g. 123456789 (optional)" oninput="updateDraftField(\'clientPan\',this.value); liveValidatePan();"/><div class="field-error" id="err-clientPan"></div></div>';
   html += '<div><label class="field-label">Client phone</label><input class="field-input" id="in-clientPhone" value="' + esc(inv.clientPhone) + '" placeholder="10 digits, e.g. 98XXXXXXXX" maxlength="10" oninput="updateDraftField(\'clientPhone\',this.value); liveValidatePhone();"/><div class="field-error" id="err-clientPhone"></div></div>';
@@ -2143,7 +2188,7 @@ function renderForm() {
     '</div></div>';
 
   html += '<div class="form-footer"><button class="btn btn-ghost" onclick="' + (state.invoices.some(i => i.id === inv.id) ? "goto_('view','" + inv.id + "')" : "goto_('list')") + '">Cancel</button>' +
-    '<button class="btn btn-primary" id="save-draft-btn" onclick="saveDraft()">' + icon("check", 15) + ' Save invoice</button></div>';
+    '<button class="btn btn-primary" id="save-draft-btn"' + (canSaveInvoice(inv) ? '' : ' disabled title="Enter the client name and add at least one product to save this bill."') + ' onclick="saveDraft()">' + icon("check", 15) + ' Save invoice</button></div>';
   html += '</div>';
   return html;
 }
@@ -2319,7 +2364,7 @@ function render() {
   const pageFns = { dashboard: renderDashboard, list: renderList, clients: renderClients, settings: renderSettings, new: renderForm, edit: renderForm, view: renderView,
     items: renderItems, itemNew: renderItemForm, itemEdit: renderItemForm, sales: renderSales };
   document.getElementById("main-content").innerHTML = (pageFns[state.page] || renderDashboard)();
-  if (state.page === "new" || state.page === "edit") { renderFormTotalsOnly(); if (formError) liveValidateClientName(); updateClientDueInfo(); }
+  if (state.page === "new" || state.page === "edit") { renderFormTotalsOnly(); if (formError) liveValidateClientName(); updateClientDueInfo(); updateSaveButtonState(); }
   if (state.page === "new" && autofocusClientName) {
     autofocusClientName = false;
     const nameInput = document.getElementById("in-clientName");
