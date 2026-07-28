@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>RK Alpine Agro — Invoices</title>
-  <link rel="icon"type="image/png"href="logo.png">
+<title>RK Alpine Agro Processing Udhyog — Invoices</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap');
   @font-face { font-family: 'system'; src: local('Arial'); }
@@ -179,6 +178,9 @@
     font-size: 13.5px; outline: none; box-sizing: border-box; color: var(--charcoal); font-family: inherit; background: #fff;
     transition: border-color 0.15s ease, box-shadow 0.15s ease; }
   .field-input:focus, .field-textarea:focus, .field-select:focus { border-color: var(--orange); box-shadow: 0 0 0 3px var(--orange-soft); }
+  .field-input:disabled, .field-textarea:disabled, .field-select:disabled { background: var(--paper-dim); color: var(--charcoal-soft); cursor: not-allowed; }
+  .readonly-banner { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; color: var(--amber-deep);
+    background: var(--amber-soft); border: 1px solid rgba(201,147,47,0.3); border-radius: 8px; padding: 9px 12px; margin-bottom: 16px; }
   .field-textarea { min-height: 60px; resize: vertical; }
   .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
   .form-grid .span2 { grid-column: 1 / -1; }
@@ -352,6 +354,7 @@
     .form-footer .btn { width: 100%; justify-content: center; }
     .toolbar { flex-direction: column; align-items: stretch !important; gap: 10px; }
     .toolbar .btn { width: 100%; justify-content: center; }
+    .toolbar .search-wrap { max-width: none; flex-basis: auto; width: 100%; }
     #toast-container { left: 12px; right: 12px; bottom: 12px; }
     .toast { width: 100%; }
     .modal-card { padding: 20px; max-width: 100%; }
@@ -526,6 +529,7 @@
     </div>
     <nav class="nav" id="nav"></nav>
     <div class="sidebar-footer">
+      <div id="sidebar-role-badge"></div>
       <button onclick="signOut()" style="width:100%;text-align:center;background:none;border:none;color:#9C9689;font-size:11.5px;font-family:inherit;cursor:pointer;margin-top:10px;padding:4px;">Sign out</button>
     </div>
   </aside>
@@ -899,7 +903,7 @@ function invoiceTotals(inv) {
   };
 }
 
-// ---------- Admins (exactly 2, managed in Supabase Auth + the admins table) ----------
+// ---------- Admins & moderators (managed in Supabase Auth + the admins table) ----------
 function adminNameById(id) {
   if (!id) return "—";
   const a = (state.admins || []).find(x => x.id === id);
@@ -908,7 +912,7 @@ function adminNameById(id) {
 async function fetchAdmins() {
   const { data, error } = await sb.from("admins").select("*").order("created_at", { ascending: true });
   if (error) { console.error(error); return []; }
-  return (data || []).map(r => ({ id: r.id, name: r.name || r.email, email: r.email }));
+  return (data || []).map(r => ({ id: r.id, name: r.name || r.email, email: r.email, role: r.role || "admin" }));
 }
 async function saveAdminNameToDb(id, name) {
   const { error } = await sb.from("admins").update({ name }).eq("id", id);
@@ -1026,8 +1030,10 @@ window.attemptLogin = attemptLogin;
 async function fetchCurrentAdminProfile(userId) {
   const { data, error } = await sb.from("admins").select("*").eq("id", userId).maybeSingle();
   if (error || !data) return null;
-  return { id: data.id, name: data.name || data.email, email: data.email };
+  return { id: data.id, name: data.name || data.email, email: data.email, role: data.role || "admin" };
 }
+function isModerator() { return !!(state.currentAdmin && state.currentAdmin.role === "moderator"); }
+window.isModerator = isModerator;
 
 function signOut() {
   document.getElementById("signout-modal").classList.add("show");
@@ -1262,6 +1268,7 @@ async function deleteInvoice(id) {
 window.deleteInvoice = deleteInvoice;
 
 async function restoreInvoice(id) {
+  if (isModerator()) { showToast("Moderators have read-only access to settings", "error"); return; }
   const rec = state.deletedInvoices.find(d => d.invoice.id === id);
   if (!rec) return;
   try {
@@ -1275,6 +1282,7 @@ async function restoreInvoice(id) {
 window.restoreInvoice = restoreInvoice;
 
 async function permanentlyDeleteInvoice(id) {
+  if (isModerator()) { showToast("Moderators have read-only access to settings", "error"); return; }
   const rec = state.deletedInvoices.find(d => d.invoice.id === id);
   if (!rec) return;
   if (!confirm("Permanently delete invoice " + rec.invoice.number + "? This cannot be undone.")) return;
@@ -1525,6 +1533,7 @@ window.setDraftDiscountType = setDraftDiscountType;
 let autofocusClientName = false;
 let savedFlashTimeout = null;
 async function saveCompanyForm() {
+  if (isModerator()) { showToast("Moderators have read-only access to settings", "error"); return; }
   const f = document.getElementById("settings-form");
   const next = {
     name: f.querySelector('[data-k="name"]').value,
@@ -1552,13 +1561,17 @@ async function saveCompanyForm() {
 window.saveCompanyForm = saveCompanyForm;
 
 // ---------- Admins tab ----------
-// Exactly 2 admin accounts exist, created ahead of time in the Supabase
-// dashboard (Authentication -> Users) and linked via the `admins` table.
-// From here, each admin can only rename themselves (the display name used
-// on "Issued by") or trigger a password-reset email for either account —
-// there's no way to add, remove, or otherwise get to a 3rd admin from the UI.
+// Admin and moderator accounts are created ahead of time in the Supabase
+// dashboard (Authentication -> Users) and linked via the `admins` table,
+// which now carries a `role` column ('admin' | 'moderator'). From here,
+// each signed-in account can rename itself (the display name used on
+// "Issued by") or trigger a password-reset email for any account — but
+// moderators are blocked (both in the UI and in saveUsersForm itself)
+// from doing either. There's no way to add/remove accounts from the UI;
+// that still happens in the Supabase dashboard + a matching admins row.
 let usersSavedFlashTimeout = null;
 async function saveUsersForm() {
+  if (isModerator()) { showToast("Moderators have read-only access to settings", "error"); return; }
   const f = document.getElementById("users-form");
   const rows = f.querySelectorAll("[data-admin-id]");
   const btn = document.getElementById("users-save-btn");
@@ -1589,6 +1602,7 @@ window.saveUsersForm = saveUsersForm;
 
 let pendingResetAdminId = null;
 function showResetUserModal(id) {
+  if (isModerator()) { showToast("Moderators have read-only access to settings", "error"); return; }
   pendingResetAdminId = id;
   const a = state.admins.find(x => x.id === id);
   if (!a) return;
@@ -1802,29 +1816,10 @@ function renderDashboard() {
   html += '</div>';
 
   html += '<div class="grid-2">';
-  html += '<div class="card col-wide"><div class="section-title">Revenue, last 6 months</div><div class="chart">';
-  chartData.forEach((d, idx) => {
-    const h = Math.max(4, (d.value / maxVal) * 150);
-    html += '<div class="bar-col"><div class="bar-val">' + (d.value > 0 ? fmt(d.value) : "") + '</div>' +
-      '<div class="bar' + (idx === chartData.length - 1 ? ' current' : '') + '" style="height:' + h + 'px"></div>' +
-      '<div class="bar-month">' + d.month + '</div></div>';
-  });
-  html += '</div></div>';
-
-  html += '<div class="card col-narrow"><div class="section-title">Top clients</div>';
-  if (topClients.length === 0) html += '<div class="empty-row">No client data yet</div>';
-  topClients.forEach((c, idx) => {
-    html += '<div class="client-row"><div style="display:flex;align-items:center;gap:10px;min-width:0">' +
-      '<div class="rank' + (idx === 0 ? ' top' : '') + '">' + (idx + 1) + '</div>' +
-      '<span class="client-name">' + esc(c.name) + '</span></div>' +
-      '<span class="client-total">' + fmt(c.total) + '</span></div>';
-  });
-  html += '</div></div>';
-
-  html += '<div class="card"><div class="section-title">' + icon("image", 15) + ' Top products</div>';
+  html += '<div class="card col-narrow"><div class="section-title">' + icon("image", 15) + ' Top products</div>';
   if (topProducts.length === 0) html += '<div class="empty-row">No product data yet</div>';
   else {
-    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:12px">';
+    html += '<div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">';
     topProducts.forEach((p, idx) => {
       html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);border-radius:10px;padding:10px 12px">' +
         '<div style="display:flex;align-items:center;gap:10px;min-width:0">' +
@@ -1836,6 +1831,26 @@ function renderDashboard() {
     html += '</div>';
   }
   html += '</div>';
+
+  html += '<div class="card col-narrow"><div class="section-title">Top clients</div>';
+  if (topClients.length === 0) html += '<div class="empty-row">No client data yet</div>';
+  topClients.forEach((c, idx) => {
+    html += '<div class="client-row"><div style="display:flex;align-items:center;gap:10px;min-width:0">' +
+      '<div class="rank' + (idx === 0 ? ' top' : '') + '">' + (idx + 1) + '</div>' +
+      '<span class="client-name">' + esc(c.name) + '</span></div>' +
+      '<span class="client-total">' + fmt(c.total) + '</span></div>';
+  });
+  html += '</div>';
+  html += '</div>';
+
+  html += '<div class="card"><div class="section-title">Revenue, last 6 months</div><div class="chart">';
+  chartData.forEach((d, idx) => {
+    const h = Math.max(4, (d.value / maxVal) * 150);
+    html += '<div class="bar-col"><div class="bar-val">' + (d.value > 0 ? fmt(d.value) : "") + '</div>' +
+      '<div class="bar' + (idx === chartData.length - 1 ? ' current' : '') + '" style="height:' + h + 'px"></div>' +
+      '<div class="bar-month">' + d.month + '</div></div>';
+  });
+  html += '</div></div>';
 
   html += '<div class="card"><div class="section-title" style="color:var(--amber)">' + icon("alertTriangle", 15) + ' Needs attention — unpaid, oldest first</div>';
   if (overdue.length === 0) html += '<div class="empty-row">Nothing outstanding — everything is paid up.</div>';
@@ -2059,7 +2074,7 @@ function setSalesTo(v) { state.salesTo = v; render(); }
 window.setSalesFrom = setSalesFrom; window.setSalesTo = setSalesTo;
 
 function renderSales() {
-  let html = '<div class="card" style="margin-bottom:18px"><div class="section-title">Filter by date</div>' +
+  const filterHtml = '<div class="card" style="margin-top:18px"><div class="section-title">Filter by date</div>' +
     '<div style="display:flex;gap:14px;margin-top:12px;flex-wrap:wrap">' +
     '<div><label class="field-label">From</label><input type="date" class="field-input" value="' + esc(state.salesFrom) + '" oninput="setSalesFrom(this.value)"/></div>' +
     '<div><label class="field-label">To</label><input type="date" class="field-input" value="' + esc(state.salesTo) + '" oninput="setSalesTo(this.value)"/></div>' +
@@ -2075,8 +2090,7 @@ function renderSales() {
   });
 
   if (invoicesInRange.length === 0) {
-    html += emptyState("No sales in this range", "Once invoices exist for the selected dates, item-level sales totals show up here.", null, null);
-    return html;
+    return emptyState("No sales in this range", "Once invoices exist for the selected dates, item-level sales totals show up here.", null, null) + filterHtml;
   }
 
   const byItem = {};
@@ -2096,7 +2110,7 @@ function renderSales() {
   const rows = Object.entries(byItem).map(([name, v]) => Object.assign({ name }, v)).sort((a, b) => b.revenue - a.revenue);
   const maxRev = Math.max(1, ...rows.slice(0, 6).map(r => r.revenue));
 
-  html += '<div class="stat-row" style="margin-bottom:20px">' +
+  let html = '<div class="stat-row" style="margin-bottom:20px">' +
     '<div class="stat-card"><div class="stat-label">Invoices in range</div><div class="stat-value">' + invoicesInRange.length + '</div></div>' +
     '<div class="stat-card"><div class="stat-label">Units sold</div><div class="stat-value">' + grandQty + '</div></div>' +
     '<div class="stat-card"><div class="stat-label">Revenue (line items)</div><div class="stat-value">' + fmt(grandRevenue) + '</div></div>' +
@@ -2121,7 +2135,7 @@ function renderSales() {
       '<div class="t-amt">' + fmt(r.revenue) + '</div></div>';
   });
   html += '</div>';
-  return html;
+  return html + filterHtml;
 }
 
 function renderFormTotalsOnly() {
@@ -2313,37 +2327,43 @@ function renderSettingsTabs() {
 
 function renderCompanyTab() {
   const c = state.company;
+  const ro = isModerator();
   const fields = [["name", "Company name"], ["nameNe", "Company name (Nepali)"], ["address", "Address"], ["addressNe", "Address (Nepali)"], ["phone", "Phone"], ["email", "Email"], ["pan", "PAN number"]];
   let html = '<div class="settings-card"><div class="section-title">Company details</div>' +
-    '<p class="settings-intro">Shown on every invoice header. The Nepali name/address are used when an invoice is printed in Nepali — leave blank to fall back to the English version.</p><div class="settings-fields" id="settings-form">';
+    '<p class="settings-intro">Shown on every invoice header. The Nepali name/address are used when an invoice is printed in Nepali — leave blank to fall back to the English version.</p>' +
+    (ro ? '<div class="readonly-banner">' + icon("eye", 14) + ' Read-only — moderators can view settings but not make changes.</div>' : '') +
+    '<div class="settings-fields" id="settings-form">';
   fields.forEach(([k, label]) => {
-    html += '<div><label class="field-label">' + label + '</label><input class="field-input" data-k="' + k + '" value="' + esc(c[k]) + '"/></div>';
+    html += '<div><label class="field-label">' + label + '</label><input class="field-input" data-k="' + k + '" value="' + esc(c[k]) + '"' + (ro ? ' disabled' : '') + '/></div>';
   });
-  html += '</div><button class="btn btn-primary" id="settings-save-btn" style="margin-top:20px" onclick="saveCompanyForm()">' + icon("check", 15) + ' Save changes</button></div>';
+  html += '</div>' + (ro ? '' : '<button class="btn btn-primary" id="settings-save-btn" style="margin-top:20px" onclick="saveCompanyForm()">' + icon("check", 15) + ' Save changes</button>') + '</div>';
   return html;
 }
 
 function renderUsersTab() {
+  const ro = isModerator();
   let html = '<div class="settings-card">' +
-    '<div class="section-title">' + icon("users", 15) + ' Admins</div>' +
-    '<p class="settings-intro">Exactly 2 admins can sign in to this site — both have identical, full access to every invoice and setting. Accounts are created in the Supabase dashboard; from here you can rename yourself (the name shown as "Issued by" on invoices) or send a password reset email to either admin.</p>' +
+    '<div class="section-title">' + icon("users", 15) + ' Admins &amp; moderators</div>' +
+    '<p class="settings-intro">Admins have full access to every invoice and setting. Moderators have identical access everywhere else, but settings are read-only for them. Accounts are created in the Supabase dashboard; from here you can rename yourself (the name shown as "Issued by" on invoices) or send a password reset email.</p>' +
+    (ro ? '<div class="readonly-banner">' + icon("eye", 14) + ' Read-only — moderators can view this list but not make changes.</div>' : '') +
     '<div id="users-form" style="display:flex;flex-direction:column;gap:16px;margin-top:16px">';
 
   state.admins.forEach(a => {
     const isMe = state.currentAdmin && a.id === state.currentAdmin.id;
+    const roleLabel = a.role === "moderator" ? "Moderator" : "Admin";
     html += '<div data-admin-id="' + a.id + '" style="border:1px solid var(--line);border-radius:8px;padding:14px">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
-      '<div style="font-size:11.5px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:0.04em">' + (isMe ? "You" : "Other admin") + '</div>' +
+      '<div style="font-size:11.5px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:0.04em">' + (isMe ? "You" : "Other") + ' · ' + roleLabel + '</div>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
-      '<div><label class="field-label">Display name</label><input class="field-input" data-field="name" value="' + esc(a.name) + '"' + (isMe ? '' : ' disabled') + '/></div>' +
+      '<div><label class="field-label">Display name</label><input class="field-input" data-field="name" value="' + esc(a.name) + '"' + ((isMe && !ro) ? '' : ' disabled') + '/></div>' +
       '<div><label class="field-label">Email</label><input class="field-input" value="' + esc(a.email) + '" disabled/></div>' +
       '</div>' +
-      '<button type="button" class="btn btn-ghost" style="margin-top:10px;font-size:12px;padding:6px 12px" onclick="showResetUserModal(\'' + a.id + '\')">' + icon("alertTriangle", 13) + ' Send password reset email</button>' +
+      (ro ? '' : '<button type="button" class="btn btn-ghost" style="margin-top:10px;font-size:12px;padding:6px 12px" onclick="showResetUserModal(\'' + a.id + '\')">' + icon("alertTriangle", 13) + ' Send password reset email</button>') +
       '</div>';
   });
 
-  html += '</div><button class="btn btn-primary" id="users-save-btn" style="margin-top:16px" onclick="saveUsersForm()">' + icon("check", 15) + ' Save</button></div>';
+  html += '</div>' + (ro ? '' : '<button class="btn btn-primary" id="users-save-btn" style="margin-top:16px" onclick="saveUsersForm()">' + icon("check", 15) + ' Save</button>') + '</div>';
   return html;
 }
 
@@ -2353,8 +2373,10 @@ function fmtDateTime(iso) {
 }
 
 function renderDeletedTab() {
+  const ro = isModerator();
   let html = '<div class="settings-card wide"><div class="section-title">' + icon("trash", 15) + ' Deleted invoices</div>' +
-    '<p class="settings-intro">Deleted invoices land here instead of disappearing. Their invoice number is retired for good — a new invoice never reuses it, so a gap in the numbering is your sign that something was deleted.</p>';
+    '<p class="settings-intro">Deleted invoices land here instead of disappearing. Their invoice number is retired for good — a new invoice never reuses it, so a gap in the numbering is your sign that something was deleted.</p>' +
+    (ro ? '<div class="readonly-banner">' + icon("eye", 14) + ' Read-only — moderators can view this list but can\'t restore or permanently delete.</div>' : '');
 
   if (state.deletedInvoices.length === 0) {
     html += '<p style="font-size:13px;color:var(--charcoal-soft);margin-top:16px">Nothing here — deleted invoices will show up in this list.</p></div>';
@@ -2370,10 +2392,10 @@ function renderDeletedTab() {
       '<div style="font-weight:700;font-size:13.5px">' + esc(inv.number) + ' <span style="font-weight:500;color:var(--charcoal-soft)">· ' + esc(inv.clientName || "—") + '</span></div>' +
       '<div style="font-size:12px;color:var(--charcoal-soft);margin-top:2px">' + money_fmt_safe(inv) + ' · Deleted by <strong>' + esc(rec.deletedBy) + '</strong> on ' + esc(fmtDateTime(rec.deletedAt)) + '</div>' +
       '</div>' +
-      '<div style="display:flex;gap:8px">' +
+      (ro ? '' : '<div style="display:flex;gap:8px">' +
       '<button type="button" class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="restoreInvoice(\'' + inv.id + '\')">' + icon("check", 13) + ' Restore</button>' +
       '<button type="button" class="btn btn-ghost" style="font-size:12px;padding:6px 12px;color:var(--rust-deep)" onclick="permanentlyDeleteInvoice(\'' + inv.id + '\')">' + icon("trash", 13) + ' Delete forever</button>' +
-      '</div></div>';
+      '</div>') + '</div>';
   });
   html += '</div></div>';
   return html;
@@ -2388,6 +2410,12 @@ function renderSettings() {
 function render() {
   renderNav();
   renderTopbar();
+  const badge = document.getElementById("sidebar-role-badge");
+  if (badge && state.currentAdmin) {
+    const ro = isModerator();
+    badge.innerHTML = '<div style="font-size:11px;color:#C9C2B3;font-weight:600">' + esc(state.currentAdmin.name) + '</div>' +
+      '<div style="font-size:9.5px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;margin-top:2px;color:' + (ro ? 'var(--amber)' : '#7DAF8F') + '">' + (ro ? 'Moderator · read-only settings' : 'Admin') + '</div>';
+  }
   const pageFns = { dashboard: renderDashboard, list: renderList, clients: renderClients, settings: renderSettings, new: renderForm, edit: renderForm, view: renderView,
     items: renderItems, itemNew: renderItemForm, itemEdit: renderItemForm, sales: renderSales };
   document.getElementById("main-content").innerHTML = (pageFns[state.page] || renderDashboard)();
