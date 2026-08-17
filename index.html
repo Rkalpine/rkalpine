@@ -4,7 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>RK Alpine Agro Processing Udhyog — Invoices</title>
-  <link rel="icon" href="logo.png" type="image/png" />
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap');
   @font-face { font-family: 'system'; src: local('Arial'); }
@@ -719,13 +718,15 @@ const PRINT_LABELS = {
     invoiceTag: "INVOICE", dateLbl: "Date:", dueLbl: "Due:", paid: "Paid", unpaid: "Unpaid",
     billedTo: "Billed to", panLbl: "PAN:", qty: "Qty", unit: "Unit", rate: "Rate", amount: "Amount",
     subtotal: "Subtotal", discount: "Discount", shipping: "Shipping charge", total: "Total",
-    paidTotal: "Paid", amountDue: "Amount due", inWords: "In words:", notes: "Notes",
+    paidTotal: "Amount Paid", amountDue: "Due", returnAmt: "Return", inWords: "In words:", notes: "Notes",
+    paymentMethodLbl: "Payment method:", cash: "Cash", online: "Online",
   },
   ne: {
     invoiceTag: "बीजक", dateLbl: "मिति:", dueLbl: "भुक्तानी मिति:", paid: "भुक्तानी भयो", unpaid: "बाँकी",
     billedTo: "बील प्राप्तकर्ता", panLbl: "प्यान:", qty: "परिमाण", unit: "एकाइ", rate: "दर", amount: "रकम",
     subtotal: "जम्मा", discount: "छुट", shipping: "ढुवानी शुल्क", total: "कुल जम्मा",
-    paidTotal: "तिरेको", amountDue: "बाँकी रकम", inWords: "अक्षरमा:", notes: "टिप्पणी",
+    paidTotal: "तिरेको रकम", amountDue: "बाँकी रकम", returnAmt: "फिर्ता", inWords: "अक्षरमा:", notes: "टिप्पणी",
+    paymentMethodLbl: "भुक्तानी विधि:", cash: "नगद", online: "अनलाइन",
   },
 };
 
@@ -798,6 +799,7 @@ function dbInvoiceToApp(row) {
     shippingEnabled: !!row.shipping_enabled, shippingCharge: Number(row.shipping_charge) || 0,
     discountType: row.discount_type || "none", discountValue: Number(row.discount_value) || 0,
     notes: row.notes || "", status: row.status || "unpaid", amountPaid: Number(row.amount_paid) || 0,
+    paymentMethod: row.payment_method || "cash",
     issuedBy: row.issued_by_name || "", issuedById: row.issued_by || null,
     deletedAt: row.deleted_at || null, deletedById: row.deleted_by || null,
   };
@@ -830,6 +832,7 @@ async function saveInvoiceToDb(inv, isNew) {
     shipping_enabled: !!inv.shippingEnabled, shipping_charge: Number(inv.shippingCharge) || 0,
     discount_type: inv.discountType || "none", discount_value: Number(inv.discountValue) || 0,
     notes: inv.notes || "", status: inv.status || "unpaid", amount_paid: Number(inv.amountPaid) || 0,
+    payment_method: inv.paymentMethod || "cash",
     issued_by: state.currentAdmin ? state.currentAdmin.id : null,
     issued_by_name: inv.issuedBy || (state.currentAdmin ? state.currentAdmin.name : ""),
   };
@@ -871,7 +874,7 @@ function newBlankInvoice() {
     id: uid(), number: peekNextInvoiceNumber(),
     date: todayISO(), dueDate: "", clientName: "", clientPhone: "", clientAddress: "", clientPan: "",
     items: [newBlankItem()], shippingEnabled: false, shippingCharge: 0, discountType: "none", discountValue: 0, notes: "", status: "unpaid",
-    amountPaid: 0, issuedBy: state.currentAdmin ? state.currentAdmin.name : "",
+    amountPaid: 0, paymentMethod: "cash", issuedBy: state.currentAdmin ? state.currentAdmin.name : "",
   };
 }
 // discountType: "none" | "percent" | "flat" — discount is taken off the subtotal.
@@ -900,7 +903,8 @@ function invoiceTotals(inv) {
   return {
     preDiscountSubtotal, discountAmount, discountType, discountValue,
     subtotal, shipping, total, shippingEnabled: !!inv.shippingEnabled,
-    amountPaid, due: Math.max(0, total - amountPaid),
+    amountPaid, due: Math.max(0, total - amountPaid), returnAmt: Math.max(0, amountPaid - total),
+    paymentMethod: inv.paymentMethod || "cash",
     perLine,
   };
 }
@@ -1328,7 +1332,6 @@ function validateDraft(inv) {
   const total = invoiceTotals(inv).total;
   const amountPaid = Number(inv.amountPaid) || 0;
   if (amountPaid < 0) return "Amount paid cannot be negative.";
-  if (amountPaid > total) return "Amount paid (" + fmt(amountPaid) + ") cannot exceed the invoice total (" + fmt(total) + ").";
   return null;
 }
 
@@ -1366,9 +1369,8 @@ function liveValidateDiscount() {
 window.liveValidateDiscount = liveValidateDiscount;
 function liveValidateAmountPaid() {
   const inv = state.draft;
-  const total = invoiceTotals(inv).total;
   const paid = Number(inv.amountPaid) || 0;
-  setFieldError("err-amountPaid", "in-amountPaid", paid > total ? "Amount paid (" + fmt(paid) + ") cannot exceed the invoice total (" + fmt(total) + ")." : "");
+  setFieldError("err-amountPaid", "in-amountPaid", paid < 0 ? "Amount paid cannot be negative." : "");
 }
 window.liveValidateAmountPaid = liveValidateAmountPaid;
 function liveValidateClientName() {
@@ -1544,6 +1546,8 @@ window.setDraftShippingEnabled = setDraftShippingEnabled;
 window.setDraftShippingCharge = setDraftShippingCharge;
 function setDraftDiscountType(type) { state.draft.discountType = type; render(); }
 window.setDraftDiscountType = setDraftDiscountType;
+function setDraftPaymentMethod(method) { state.draft.paymentMethod = method; render(); }
+window.setDraftPaymentMethod = setDraftPaymentMethod;
 
 let autofocusClientName = false;
 let savedFlashTimeout = null;
@@ -2025,9 +2029,45 @@ function renderClientsBodyOnly() {
 function renderClients() {
   if (state.invoices.length === 0) return renderClientsBody();
   return '<div class="toolbar"><div class="search-wrap">' + icon("search", 15) +
-    '<input class="search-input" placeholder="Search client" oninput="onClientSearchInput(this.value)" value="' + esc(clientSearchQuery) + '"/></div></div>' +
+    '<input class="search-input" placeholder="Search client" oninput="onClientSearchInput(this.value)" value="' + esc(clientSearchQuery) + '"/></div>' +
+    '<button class="btn btn-ghost" onclick="downloadSalesCSV()" title="Download every sale as a CSV file for analysis">' + icon("download", 15) + ' Download all sales</button>' +
+    '</div>' +
     '<div id="clients-body">' + renderClientsBody() + '</div>';
 }
+
+// Exports one row per invoice (basic info + revenue) so the data can be opened
+// in a spreadsheet for analysis. Deleted invoices are intentionally excluded.
+function csvEscape(v) {
+  const s = String(v == null ? "" : v);
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function downloadSalesCSV() {
+  const cols = ["Invoice Number", "Date", "Due Date", "Status", "Client Name", "Client Phone",
+    "Payment Method", "Items", "Subtotal", "Discount", "Shipping", "Total", "Amount Paid", "Due", "Return", "Issued By"];
+  const rows = [cols];
+  const sorted = state.invoices.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+  sorted.forEach(inv => {
+    const t = invoiceTotals(inv);
+    rows.push([
+      inv.number, inv.date, inv.dueDate || "", inv.status, inv.clientName || "", inv.clientPhone || "",
+      (inv.paymentMethod === "online" ? "Online" : "Cash"), inv.items.length,
+      t.preDiscountSubtotal.toFixed(2), t.discountAmount.toFixed(2), t.shipping.toFixed(2), t.total.toFixed(2),
+      t.amountPaid.toFixed(2), t.due.toFixed(2), t.returnAmt.toFixed(2), inv.issuedBy || "",
+    ]);
+  });
+  const csv = rows.map(r => r.map(csvEscape).join(",")).join("\r\n");
+  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "sales-" + todayISO() + ".csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast("Sales CSV downloaded", "success");
+}
+window.downloadSalesCSV = downloadSalesCSV;
 
 // ---------- Item catalog (photo + description) ----------
 function renderItems() {
@@ -2214,7 +2254,8 @@ function renderFormTotalsOnly() {
   html += '<div class="totals-row bold"><span class="lbl">Total</span><span>' + fmt(t.total) + '</span></div>';
   if (t.amountPaid > 0) {
     html += '<div class="totals-row"><span class="lbl">Paid</span><span>' + fmt(t.amountPaid) + '</span></div>';
-    html += '<div class="totals-row bold"><span class="lbl">Due</span><span>' + fmt(t.due) + '</span></div>';
+    if (t.due > 0) html += '<div class="totals-row bold"><span class="lbl">Due</span><span>' + fmt(t.due) + '</span></div>';
+    else if (t.returnAmt > 0) html += '<div class="totals-row bold"><span class="lbl">Return</span><span>' + fmt(t.returnAmt) + '</span></div>';
   }
   box.innerHTML = html;
   document.querySelectorAll(".item-amt").forEach((elm, idx) => {
@@ -2294,8 +2335,13 @@ function renderForm() {
     (inv.shippingEnabled ?
       '<input type="number" class="field-input" style="margin-top:6px" min="0" value="' + (inv.shippingCharge || 0) + '" placeholder="e.g. 200" oninput="setDraftShippingCharge(this.value)"/>' : '') +
     '<div class="totals-divider" id="totals-content"></div>' +
-    '<div style="margin-top:10px"><label class="field-label">Amount already paid</label>' +
+    '<div style="margin-top:10px"><label class="field-label">Amount Paid</label>' +
     '<input type="number" class="field-input" id="in-amountPaid" value="' + (inv.amountPaid || 0) + '" oninput="updateDraftField(\'amountPaid\',this.value); renderFormTotalsOnly(); liveValidateAmountPaid();"/><div class="field-error" id="err-amountPaid"></div></div>' +
+    '<label class="field-label" style="margin-top:14px">Payment method</label>' +
+    '<div class="vat-toggle">' +
+    '<button type="button" class="vat-btn ' + ((inv.paymentMethod || "cash") === "cash" ? "active" : "") + '" onclick="setDraftPaymentMethod(\'cash\')" title="Paid in cash">Cash</button>' +
+    '<button type="button" class="vat-btn ' + (inv.paymentMethod === "online" ? "active" : "") + '" onclick="setDraftPaymentMethod(\'online\')" title="Paid online / bank transfer">Online</button>' +
+    '</div>' +
     '</div></div>';
 
   html += '<div class="form-footer"><button class="btn btn-ghost" onclick="' + (state.invoices.some(i => i.id === inv.id) ? "goto_('view','" + inv.id + "')" : "goto_('list')") + '">Cancel</button>' +
@@ -2352,8 +2398,13 @@ function buildInvoiceDocHTML(inv, lang) {
   if (t.shippingEnabled && t.shipping > 0) html += '<div class="totals-row"><span class="lbl">' + L.shipping + '</span><span>' + money(t.shipping) + '</span></div>';
   html += '<div style="border-top:2px solid var(--charcoal);margin-top:4px;padding-top:6px"><div class="totals-row bold"><span class="lbl">' + L.total + '</span><span>' + money(t.total) + '</span></div></div>';
   if (t.amountPaid > 0) html += '<div class="totals-row" style="margin-top:4px"><span class="lbl">' + L.paidTotal + '</span><span>' + money(t.amountPaid) + '</span></div>';
-  html += '<div class="totals-row bold" style="color:' + (t.due > 0 ? "var(--amber)" : "var(--green)") + '"><span class="lbl">' + L.amountDue + '</span><span>' + money(t.due) + '</span></div>';
+  if (t.due > 0) {
+    html += '<div class="totals-row bold" style="color:var(--amber)"><span class="lbl">' + L.amountDue + '</span><span>' + money(t.due) + '</span></div>';
+  } else if (t.returnAmt > 0) {
+    html += '<div class="totals-row bold" style="color:var(--green)"><span class="lbl">' + L.returnAmt + '</span><span>' + money(t.returnAmt) + '</span></div>';
+  }
   html += '</div></div>';
+  html += '<div style="margin-top:6px;font-size:12.5px;color:var(--charcoal-soft)"><span style="font-weight:600;color:var(--charcoal)">' + L.paymentMethodLbl + ' </span>' + (t.paymentMethod === "online" ? L.online : L.cash) + '</div>';
 
   html += '<div style="margin-top:14px;padding-top:10px;border-top:1px dashed var(--line);font-size:12px;color:var(--charcoal-soft)">' +
     '<span style="font-weight:600;color:var(--charcoal)">' + L.inWords + ' </span>' + esc(isNe ? numberToWordsNepali(t.total) : numberToWords(t.total)) + '</div>';
