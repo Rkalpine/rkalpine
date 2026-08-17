@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>RK Alpine Agro — Invoices</title>
-  <link rel="icon"type="image/png"href="logo.png">
+<title>RK Alpine Agro Processing Udhyog — Invoices</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap');
   @font-face { font-family: 'system'; src: local('Arial'); }
@@ -619,6 +618,7 @@ function todayISO() { return new Date().toISOString().slice(0, 10); }
 function fmt(n) { return CURRENCY + " " + (Math.round((n + Number.EPSILON) * 100) / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 }); }
 function monthLabel(d) { return new Date(d).toLocaleString("en-US", { month: "short", year: "2-digit" }); }
 function esc(s) { return (s || "").toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+function jsStr(s) { return (s || "").toString().replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/\n/g, " "); }
 // Pulls the running sequence number out of an invoice number string (e.g. "INV-2026-00042" -> 42,
 // "0007" -> 7) so the invoice list can be sorted newest-first regardless of the exact number format.
 function parseSeqFromNumber(num) {
@@ -948,6 +948,7 @@ const state = {
   catalogDraft: null,
   salesFrom: "",
   salesTo: "",
+  activeClientName: "",
 };
 
 // ---------- Login gate ----------
@@ -1226,6 +1227,7 @@ function goto_(page, id) {
   else if (page === "edit") { const inv = state.invoices.find(i => i.id === state.activeId); state.draft = JSON.parse(JSON.stringify(inv)); state.page = "edit"; formError = null; }
   else if (page === "itemNew") { state.catalogDraft = newBlankCatalogItem(); state.page = "itemNew"; }
   else if (page === "itemEdit") { const it = state.catalogItems.find(i => i.id === state.activeId); state.catalogDraft = JSON.parse(JSON.stringify(it)); state.page = "itemEdit"; }
+  else if (page === "clientDetail") { state.activeClientName = id || ""; state.page = "clientDetail"; }
   else { state.page = page; }
   render();
 }
@@ -1299,7 +1301,7 @@ window.permanentlyDeleteInvoice = permanentlyDeleteInvoice;
 let formError = null;
 
 function invoiceHasProduct(inv) {
-  return !!(inv && (inv.items || []).some(it => it.catalogId));
+  return !!(inv && (inv.items || []).some(it => (it.desc || "").trim() !== "" && (Number(it.qty) || 0) > 0));
 }
 function canSaveInvoice(inv) {
   return !!(inv && (inv.clientName || "").trim() && invoiceHasProduct(inv));
@@ -1322,6 +1324,10 @@ function validateDraft(inv) {
     if (dv < 0) return "Discount amount cannot be negative.";
     if (dv > preDiscountSubtotal) return "Discount (" + fmt(dv) + ") cannot exceed the subtotal (" + fmt(preDiscountSubtotal) + ").";
   }
+  const total = invoiceTotals(inv).total;
+  const amountPaid = Number(inv.amountPaid) || 0;
+  if (amountPaid < 0) return "Amount paid cannot be negative.";
+  if (amountPaid > total) return "Amount paid (" + fmt(amountPaid) + ") cannot exceed the invoice total (" + fmt(total) + ").";
   return null;
 }
 
@@ -1357,6 +1363,13 @@ function liveValidateDiscount() {
   setFieldError("err-discount", "in-discount", msg);
 }
 window.liveValidateDiscount = liveValidateDiscount;
+function liveValidateAmountPaid() {
+  const inv = state.draft;
+  const total = invoiceTotals(inv).total;
+  const paid = Number(inv.amountPaid) || 0;
+  setFieldError("err-amountPaid", "in-amountPaid", paid > total ? "Amount paid (" + fmt(paid) + ") cannot exceed the invoice total (" + fmt(total) + ")." : "");
+}
+window.liveValidateAmountPaid = liveValidateAmountPaid;
 function liveValidateClientName() {
   const v = (state.draft.clientName || "").trim();
   setFieldError("err-clientName", "in-clientName", v === "" ? "Required." : "");
@@ -1729,7 +1742,7 @@ function renderNav() {
     ["file", "list", "Invoices", ["list", "new", "edit", "view"]],
     ["image", "items", "Item Catalog", ["items", "itemNew", "itemEdit"]],
     ["barChart", "sales", "Sales Review", ["sales"]],
-    ["users", "clients", "Clients", ["clients"]],
+    ["users", "clients", "Clients", ["clients", "clientDetail"]],
     ["settings", "settings", "Settings", ["settings"]],
   ];
   const nav = document.getElementById("nav");
@@ -1741,7 +1754,7 @@ function renderNav() {
 
 function renderTopbar() {
   document.getElementById("topbar-company").textContent = state.company.name;
-  const titles = { dashboard: "Dashboard", list: "Invoices", clients: "Clients", settings: "Settings", new: "New invoice", edit: "Edit invoice",
+  const titles = { dashboard: "Dashboard", list: "Invoices", clients: "Clients", clientDetail: state.activeClientName || "Client", settings: "Settings", new: "New invoice", edit: "Edit invoice",
     items: "Item Catalog", itemNew: "New item", itemEdit: "Edit item", sales: "Sales Review",
     view: (state.invoices.find(i => i.id === state.activeId) || {}).number || "Invoice" };
   document.getElementById("topbar-title").textContent = titles[state.page] || "";
@@ -1945,12 +1958,63 @@ function renderClientsBody() {
   if (rows.length === 0) return emptyState("No matches", "Try a different search term.", null, "");
   let html = "";
   rows.forEach(c => {
-    html += '<div class="client-card"><div><div class="client-card-name">' + esc(c.name) + '</div>' +
+    html += '<div class="client-card" style="cursor:pointer" onclick="goto_(\'clientDetail\',\'' + jsStr(c.name) + '\')"><div><div class="client-card-name">' + esc(c.name) + '</div>' +
       '<div class="client-card-meta">' + c.count + ' invoice' + (c.count === 1 ? "" : "s") + (c.phone ? ' · ' + esc(c.phone) : '') + '</div></div>' +
       '<div class="client-figs"><div style="text-align:right"><div class="fig-label">Total billed</div><div class="fig-value">' + fmt(c.total) + '</div></div>';
     if (c.unpaid > 0) html += '<div style="text-align:right"><div class="fig-label">Outstanding</div><div class="fig-value" style="color:var(--amber)">' + fmt(c.unpaid) + '</div></div>';
     html += '</div></div>';
   });
+  return html;
+}
+
+// ---------- Client purchase history (every line item a given client has ever bought,
+// across all their invoices, newest first) ----------
+function renderClientDetail() {
+  const name = state.activeClientName || "";
+  const key = normName(name);
+  const backBtn = '<button class="btn btn-ghost" style="margin-bottom:16px" onclick="goto_(\'clients\')">' + icon("arrowLeft", 15) + ' Back to clients</button>';
+  const invoices = state.invoices.filter(i => normName(i.clientName) === key).sort((a, b) => new Date(b.date) - new Date(a.date));
+  if (invoices.length === 0) {
+    return backBtn + emptyState("No purchases found", "This client has no invoices on record.", null, "");
+  }
+  const purchases = [];
+  invoices.forEach(inv => {
+    inv.items.forEach(it => {
+      const qty = Number(it.qty) || 0;
+      const rate = Number(it.rate) || 0;
+      purchases.push({ date: inv.date, desc: it.desc || "—", unit: it.unit || "", qty, rate, amount: qty * rate, invNumber: inv.number, invId: inv.id, status: inv.status });
+    });
+  });
+  purchases.sort((a, b) => new Date(b.date) - new Date(a.date));
+  const totalSpent = invoices.reduce((s, i) => s + invoiceTotals(i).total, 0);
+  const totalUnits = purchases.reduce((s, p) => s + p.qty, 0);
+
+  let html = backBtn;
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px">' +
+    '<div><div class="topbar-eyebrow">Client</div><div style="font-family:Georgia,serif;font-weight:700;font-size:20px;color:var(--charcoal)">' + esc(name) + '</div></div></div>';
+
+  html += '<div class="stat-row" style="margin-bottom:20px">' +
+    '<div class="stat-card"><div class="stat-label">Invoices</div><div class="stat-value">' + invoices.length + '</div></div>' +
+    '<div class="stat-card"><div class="stat-label">Items purchased</div><div class="stat-value">' + purchases.length + '</div></div>' +
+    '<div class="stat-card"><div class="stat-label">Units bought</div><div class="stat-value">' + totalUnits + '</div></div>' +
+    '<div class="stat-card"><div class="stat-label">Total spent</div><div class="stat-value">' + fmt(totalSpent) + '</div></div>' +
+    '</div>';
+
+  html += '<div class="section-title" style="margin-bottom:10px">Purchase history</div>';
+  html += '<div class="table-wrap"><div class="t-head" style="grid-template-columns:1fr 2fr 1fr 1fr 1fr 1fr 1fr">' +
+    '<div>Date</div><div>Item</div><div>Qty</div><div>Unit</div><div>Rate</div><div>Amount</div><div>Invoice</div></div>';
+  purchases.forEach(p => {
+    html += '<div class="t-row" style="grid-template-columns:1fr 2fr 1fr 1fr 1fr 1fr 1fr;cursor:pointer" onclick="goto_(\'view\',\'' + p.invId + '\')">' +
+      '<div>' + esc(p.date) + '</div>' +
+      '<div class="t-client">' + esc(p.desc) + '</div>' +
+      '<div>' + p.qty + '</div>' +
+      '<div>' + esc(p.unit) + '</div>' +
+      '<div>' + fmt(p.rate) + '</div>' +
+      '<div class="t-amt">' + fmt(p.amount) + '</div>' +
+      '<div><span class="pill ' + p.status + '"><span class="dot ' + p.status + '"></span>' + esc(p.invNumber) + '</span></div>' +
+      '</div>';
+  });
+  html += '</div>';
   return html;
 }
 function renderClientsBodyOnly() {
@@ -2159,6 +2223,7 @@ function renderFormTotalsOnly() {
   liveValidatePan();
   liveValidatePhone();
   liveValidateDiscount();
+  liveValidateAmountPaid();
 }
 
 function renderForm() {
@@ -2202,7 +2267,7 @@ function renderForm() {
       '<div class="item-desc"><span class="mobile-field-label">Description</span><input class="field-input locked-field" readonly title="Set by selecting a catalog item above" value="' + esc(it.desc) + '" placeholder="Item / service description"/></div>' +
       '<div class="item-qty"><span class="mobile-field-label">Qty</span><input type="number" class="field-input" value="' + it.qty + '" oninput="updateDraftItem(\'' + it.id + '\',\'qty\',this.value)"/></div>' +
       '<div class="item-unit"><span class="mobile-field-label">Unit</span><input class="field-input locked-field" readonly title="Set by selecting a catalog item above" value="' + esc(it.unit || "") + '" placeholder="pcs, kg, hr…"/></div>' +
-      '<div class="item-rate"><span class="mobile-field-label">Rate</span><input type="number" class="field-input locked-field" readonly title="Set by selecting a catalog item above" value="' + it.rate + '"/></div>' +
+      '<div class="item-rate"><span class="mobile-field-label">Rate</span><input type="number" class="field-input" value="' + it.rate + '" oninput="updateDraftItem(\'' + it.id + '\',\'rate\',this.value)"/></div>' +
       '<div class="item-amt-wrap"><span class="mobile-field-label" style="margin:0">Amount</span><div class="item-amt">' + fmt((Number(it.qty) || 0) * (Number(it.rate) || 0)) + '</div></div>' +
       '<button class="item-remove" onclick="removeDraftItem(\'' + it.id + '\')">' + icon("minus", 14) + '</button>' +
       '</div>';
@@ -2229,7 +2294,7 @@ function renderForm() {
       '<input type="number" class="field-input" style="margin-top:6px" min="0" value="' + (inv.shippingCharge || 0) + '" placeholder="e.g. 200" oninput="setDraftShippingCharge(this.value)"/>' : '') +
     '<div class="totals-divider" id="totals-content"></div>' +
     '<div style="margin-top:10px"><label class="field-label">Amount already paid</label>' +
-    '<input type="number" class="field-input" value="' + (inv.amountPaid || 0) + '" oninput="updateDraftField(\'amountPaid\',this.value); renderFormTotalsOnly();"/></div>' +
+    '<input type="number" class="field-input" id="in-amountPaid" value="' + (inv.amountPaid || 0) + '" oninput="updateDraftField(\'amountPaid\',this.value); renderFormTotalsOnly(); liveValidateAmountPaid();"/><div class="field-error" id="err-amountPaid"></div></div>' +
     '</div></div>';
 
   html += '<div class="form-footer"><button class="btn btn-ghost" onclick="' + (state.invoices.some(i => i.id === inv.id) ? "goto_('view','" + inv.id + "')" : "goto_('list')") + '">Cancel</button>' +
@@ -2417,7 +2482,7 @@ function render() {
     badge.innerHTML = '<div style="font-size:11px;color:#C9C2B3;font-weight:600">' + esc(state.currentAdmin.name) + '</div>' +
       '<div style="font-size:9.5px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;margin-top:2px;color:' + (ro ? 'var(--amber)' : '#7DAF8F') + '">' + (ro ? 'Moderator · read-only settings' : 'Admin') + '</div>';
   }
-  const pageFns = { dashboard: renderDashboard, list: renderList, clients: renderClients, settings: renderSettings, new: renderForm, edit: renderForm, view: renderView,
+  const pageFns = { dashboard: renderDashboard, list: renderList, clients: renderClients, clientDetail: renderClientDetail, settings: renderSettings, new: renderForm, edit: renderForm, view: renderView,
     items: renderItems, itemNew: renderItemForm, itemEdit: renderItemForm, sales: renderSales };
   document.getElementById("main-content").innerHTML = (pageFns[state.page] || renderDashboard)();
   if (state.page === "new" || state.page === "edit") { renderFormTotalsOnly(); if (formError) liveValidateClientName(); updateClientDueInfo(); updateSaveButtonState(); }
