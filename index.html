@@ -4,8 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>RK Alpine Agro Processing Udhyog — Invoices</title>
-<link rel="icon" href="logo.png" type="image/png" />
-  <style>
+<style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap');
   @font-face { font-family: 'system'; src: local('Arial'); }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -573,6 +572,7 @@ const ICON_PATHS = {
   barChart: "M12 20V10M18 20V4M6 20v-4",
   table: "M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18",
   download: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3",
+  truck: "M1 3h15v13H1zM16 8h4l3 3v5h-7V8zM5.5 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM18.5 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",
 };
 function icon(name, size) {
   size = size || 16;
@@ -739,6 +739,7 @@ const defaultCompany = {
   phone: "9815057551",
   email: "rkalpine@gmail.com",
   pan: "129956855",
+  openingCash: 0,
 };
 
 // ---------- Supabase data layer ----------
@@ -755,10 +756,11 @@ function dbCompanyToApp(row) {
     name: row.name || defaultCompany.name, nameNe: row.name_ne || "",
     address: row.address || "", addressNe: row.address_ne || "",
     phone: row.phone || "", email: row.email || "", pan: row.pan || "",
+    openingCash: Number(row.opening_cash) || 0,
   };
 }
 function appCompanyToDbRow(c) {
-  return { id: 1, name: c.name || "", name_ne: c.nameNe || "", address: c.address || "", address_ne: c.addressNe || "", phone: c.phone || "", email: c.email || "", pan: c.pan || "" };
+  return { id: 1, name: c.name || "", name_ne: c.nameNe || "", address: c.address || "", address_ne: c.addressNe || "", phone: c.phone || "", email: c.email || "", pan: c.pan || "", opening_cash: Number(c.openingCash) || 0 };
 }
 async function fetchCompany() {
   const { data, error } = await sb.from("company").select("*").eq("id", 1).maybeSingle();
@@ -771,10 +773,10 @@ async function saveCompanyToDb(company) {
 }
 
 function dbCatalogToApp(row) {
-  return { id: row.id, name: row.name || "", nameNe: row.name_ne || "", unit: row.unit || "", unitNe: row.unit_ne || "", rate: Number(row.rate) || 0, photo: row.photo || "", description: row.description || "" };
+  return { id: row.id, name: row.name || "", nameNe: row.name_ne || "", unit: row.unit || "", unitNe: row.unit_ne || "", rate: Number(row.rate) || 0, cost: Number(row.cost) || 0, photo: row.photo || "", description: row.description || "" };
 }
 function appCatalogToDbRow(it) {
-  return { id: it.id, name: it.name || "", name_ne: it.nameNe || "", unit: it.unit || "", unit_ne: it.unitNe || "", rate: Number(it.rate) || 0, photo: it.photo || "", description: it.description || "" };
+  return { id: it.id, name: it.name || "", name_ne: it.nameNe || "", unit: it.unit || "", unit_ne: it.unitNe || "", rate: Number(it.rate) || 0, cost: Number(it.cost) || 0, photo: it.photo || "", description: it.description || "" };
 }
 async function fetchCatalogItems() {
   const { data, error } = await sb.from("catalog_items").select("*").order("created_at", { ascending: true });
@@ -790,9 +792,48 @@ async function deleteCatalogItemFromDb(id) {
   if (error) throw error;
 }
 
+// ---------- Expenses (whole-company cost record: manufacturing through sales) ----------
+const EXPENSE_CATEGORIES = [
+  ["raw_materials", "Raw materials"],
+  ["manufacturing", "Manufacturing / production labor"],
+  ["packaging", "Packaging"],
+  ["utilities", "Utilities"],
+  ["rent", "Rent / facilities"],
+  ["logistics", "Transport / logistics"],
+  ["marketing", "Marketing / sales"],
+  ["salaries", "Salaries / admin"],
+  ["equipment", "Equipment / capital"],
+  ["other", "Other"],
+];
+function expenseCategoryLabel(k) { const f = EXPENSE_CATEGORIES.find(c => c[0] === k); return f ? f[1] : "Other"; }
+function newBlankExpense() { return { id: uid(), date: todayISO(), category: "raw_materials", description: "", amount: 0, paid: true, sellerName: "", dueTo: "" }; }
+function dbExpenseToApp(row) {
+  return { id: row.id, date: row.date, category: row.category || "other", description: row.description || "", amount: Number(row.amount) || 0, paid: !!row.paid, sellerName: row.seller_name || "", dueTo: row.due_to || "", createdByName: row.created_by_name || "" };
+}
+function appExpenseToDbRow(e) {
+  return {
+    id: e.id, date: e.date || todayISO(), category: e.category || "other", description: e.description || "", amount: Number(e.amount) || 0, paid: !!e.paid,
+    seller_name: e.sellerName || "", due_to: e.dueTo || "",
+    created_by: state.currentAdmin ? state.currentAdmin.id : null, created_by_name: state.currentAdmin ? state.currentAdmin.name : "",
+  };
+}
+async function fetchExpenses() {
+  const { data, error } = await sb.from("expenses").select("*").order("date", { ascending: false });
+  if (error) { console.error(error); return []; }
+  return (data || []).map(dbExpenseToApp);
+}
+async function saveExpenseToDb(e) {
+  const { error } = await sb.from("expenses").upsert(appExpenseToDbRow(e));
+  if (error) throw error;
+}
+async function deleteExpenseFromDb(id) {
+  const { error } = await sb.from("expenses").delete().eq("id", id);
+  if (error) throw error;
+}
+
 function dbInvoiceToApp(row) {
   const items = (row.invoice_items || []).slice().sort((a, b) => (a.position || 0) - (b.position || 0))
-    .map(it => ({ id: it.id, desc: it.description || "", qty: Number(it.qty) || 0, unit: it.unit || "", rate: Number(it.rate) || 0 }));
+    .map(it => ({ id: it.id, desc: it.description || "", qty: Number(it.qty) || 0, unit: it.unit || "", rate: Number(it.rate) || 0, catalogId: it.catalog_id || null }));
   return {
     id: row.id, number: row.number, date: row.date, dueDate: row.due_date || "",
     clientName: row.client_name || "", clientPhone: row.client_phone || "", clientAddress: row.client_address || "", clientPan: row.client_pan || "",
@@ -842,7 +883,7 @@ async function saveInvoiceToDb(inv, isNew) {
   const { error: delErr } = await sb.from("invoice_items").delete().eq("invoice_id", inv.id);
   if (delErr) throw delErr;
   const itemRows = inv.items.map((it, idx) => ({
-    invoice_id: inv.id, id: it.id, position: idx, description: it.desc || "", qty: Number(it.qty) || 0, unit: it.unit || "", rate: Number(it.rate) || 0,
+    invoice_id: inv.id, id: it.id, position: idx, description: it.desc || "", qty: Number(it.qty) || 0, unit: it.unit || "", rate: Number(it.rate) || 0, catalog_id: it.catalogId || null,
   }));
   if (itemRows.length) {
     const { error: insErr } = await sb.from("invoice_items").insert(itemRows);
@@ -867,7 +908,7 @@ async function permanentlyDeleteInvoiceInDb(id) {
   if (error) throw error;
 }
 
-function newBlankCatalogItem() { return { id: uid(), name: "", nameNe: "", unit: "", unitNe: "", rate: 0, photo: "", description: "" }; }
+function newBlankCatalogItem() { return { id: uid(), name: "", nameNe: "", unit: "", unitNe: "", rate: 0, cost: 0, photo: "", description: "" }; }
 function peekNextInvoiceNumber() { return "Auto-assigned when saved"; }
 function newBlankItem() { return { id: uid(), desc: "", qty: 1, unit: "", rate: 0 }; }
 function newBlankInvoice() {
@@ -930,13 +971,14 @@ async function saveAdminNameToDb(id, name) {
 // deleted-invoice records need admin names for "Deleted by <name>".
 async function loadAllData() {
   state.admins = await fetchAdmins();
-  const [company, catalogItems, invoices, deletedInvoices] = await Promise.all([
-    fetchCompany(), fetchCatalogItems(), fetchInvoices(), fetchDeletedInvoices(),
+  const [company, catalogItems, invoices, deletedInvoices, expenses] = await Promise.all([
+    fetchCompany(), fetchCatalogItems(), fetchInvoices(), fetchDeletedInvoices(), fetchExpenses(),
   ]);
   state.company = company;
   state.catalogItems = catalogItems;
   state.invoices = invoices;
   state.deletedInvoices = deletedInvoices;
+  state.expenses = expenses;
 }
 
 // ---------- App state ----------
@@ -955,6 +997,13 @@ const state = {
   salesFrom: "",
   salesTo: "",
   activeClientName: "",
+  activeSellerName: "",
+  expenses: [],
+  expenseDraft: null,
+  finTab: "income",
+  finFrom: "",
+  finTo: "",
+  finAsOf: todayISO(),
 };
 
 // ---------- Login gate ----------
@@ -1233,7 +1282,10 @@ function goto_(page, id) {
   else if (page === "edit") { const inv = state.invoices.find(i => i.id === state.activeId); state.draft = JSON.parse(JSON.stringify(inv)); state.page = "edit"; formError = null; }
   else if (page === "itemNew") { state.catalogDraft = newBlankCatalogItem(); state.page = "itemNew"; }
   else if (page === "itemEdit") { const it = state.catalogItems.find(i => i.id === state.activeId); state.catalogDraft = JSON.parse(JSON.stringify(it)); state.page = "itemEdit"; }
+  else if (page === "expenseNew") { state.expenseDraft = newBlankExpense(); state.page = "expenseNew"; }
+  else if (page === "expenseEdit") { const e = state.expenses.find(x => x.id === state.activeId); state.expenseDraft = JSON.parse(JSON.stringify(e)); state.page = "expenseEdit"; }
   else if (page === "clientDetail") { state.activeClientName = id || ""; state.page = "clientDetail"; }
+  else if (page === "sellerDetail") { state.activeSellerName = id || ""; state.page = "sellerDetail"; }
   else { state.page = page; }
   render();
 }
@@ -1563,6 +1615,7 @@ async function saveCompanyForm() {
     phone: f.querySelector('[data-k="phone"]').value,
     email: f.querySelector('[data-k="email"]').value,
     pan: f.querySelector('[data-k="pan"]').value,
+    openingCash: Number(f.querySelector('[data-k="openingCash"]').value) || 0,
   };
   const btn = document.getElementById("settings-save-btn");
   try {
@@ -1748,6 +1801,9 @@ function renderNav() {
     ["file", "list", "Invoices", ["list", "new", "edit", "view"]],
     ["image", "items", "Item Catalog", ["items", "itemNew", "itemEdit"]],
     ["barChart", "sales", "Sales Review", ["sales"]],
+    ["trendDown", "expenses", "Expenses", ["expenses", "expenseNew", "expenseEdit"]],
+    ["truck", "sellers", "Sellers", ["sellers", "sellerDetail"]],
+    ["table", "financials", "Financials", ["financials"]],
     ["users", "clients", "Clients", ["clients", "clientDetail"]],
     ["settings", "settings", "Settings", ["settings"]],
   ];
@@ -1762,6 +1818,8 @@ function renderTopbar() {
   document.getElementById("topbar-company").textContent = state.company.name;
   const titles = { dashboard: "Dashboard", list: "Invoices", clients: "Clients", clientDetail: state.activeClientName || "Client", settings: "Settings", new: "New invoice", edit: "Edit invoice",
     items: "Item Catalog", itemNew: "New item", itemEdit: "Edit item", sales: "Sales Review",
+    expenses: "Expenses", expenseNew: "New expense", expenseEdit: "Edit expense", financials: "Financial Statements",
+    sellers: "Sellers", sellerDetail: state.activeSellerName || "Seller",
     view: (state.invoices.find(i => i.id === state.activeId) || {}).number || "Invoice" };
   document.getElementById("topbar-title").textContent = titles[state.page] || "";
 }
@@ -2086,6 +2144,9 @@ function renderItems() {
       '<div style="font-size:12.5px;color:var(--charcoal-soft);min-height:32px;overflow:hidden">' + esc(it.description || "") + '</div>' +
       '<div style="display:flex;justify-content:space-between;align-items:center">' +
       '<span style="font-family:Georgia,serif;font-weight:700">' + fmt(Number(it.rate) || 0) + (it.unit ? ' / ' + esc(it.unit) : '') + '</span>' +
+      '<span style="font-size:11.5px;color:var(--charcoal-soft)">Cost ' + fmt(Number(it.cost) || 0) + '</span>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:flex-end;align-items:center">' +
       '<div style="display:flex;gap:6px">' +
       '<button class="btn-icon" onclick="goto_(\'itemEdit\',\'' + it.id + '\')" title="Edit">' + icon("pencil", 14) + '</button>' +
       '<button class="btn-icon" onclick="deleteCatalogItem(\'' + it.id + '\')" title="Delete">' + icon("trash", 14) + '</button>' +
@@ -2101,7 +2162,11 @@ function renderItemForm() {
   html += '<div class="form-card" style="max-width:520px">';
   html += '<label class="field-label">Item name *</label><input class="field-input" value="' + esc(it.name) + '" placeholder="e.g. Orange Pekoe Tea" oninput="updateCatalogDraftField(\'name\',this.value)"/>';
   html += '<div class="form-grid" style="margin-top:14px"><div><label class="field-label">Unit</label><input class="field-input" value="' + esc(it.unit) + '" placeholder="kg, pcs, box…" oninput="updateCatalogDraftField(\'unit\',this.value)"/></div>' +
-    '<div><label class="field-label">Rate</label><input type="number" class="field-input" value="' + (it.rate || 0) + '" oninput="updateCatalogDraftField(\'rate\',this.value)"/></div></div>';
+    '<div><label class="field-label">Selling rate</label><input type="number" class="field-input" value="' + (it.rate || 0) + '" oninput="updateCatalogDraftField(\'rate\',this.value)"/></div></div>';
+  html += '<div class="form-grid" style="margin-top:14px"><div><label class="field-label">Cost per unit</label><input type="number" class="field-input" value="' + (it.cost || 0) + '" placeholder="Manufacturing / purchase cost" oninput="updateCatalogDraftField(\'cost\',this.value)"/></div>' +
+    '<div><label class="field-label">Margin</label><div class="readonly-field" style="padding:8px 10px;border-radius:7px;border:1px solid var(--line);background:var(--paper-dim);font-size:13.5px">' +
+    (Number(it.rate) > 0 ? (((Number(it.rate) - Number(it.cost || 0)) / Number(it.rate)) * 100).toFixed(1) + '% (' + fmt(Number(it.rate) - Number(it.cost || 0)) + ')' : '—') + '</div></div></div>' +
+    '<p class="settings-intro" style="margin-top:4px">Cost per unit feeds the Financials tab, so line items sold from this catalog entry automatically flow into Cost of Goods Sold.</p>';
   html += '<div class="form-grid" style="margin-top:14px"><div><label class="field-label" lang="ne">Item name (Nepali) — optional</label><input class="field-input" lang="ne" value="' + esc(it.nameNe || "") + '" placeholder="वस्तुको नाम (ऐच्छिक)" oninput="updateCatalogDraftField(\'nameNe\',this.value)"/></div>' +
     '<div><label class="field-label" lang="ne">Unit (Nepali) — optional</label><input class="field-input" lang="ne" value="' + esc(it.unitNe || "") + '" placeholder="कि.ग्रा., थान… (ऐच्छिक)" oninput="updateCatalogDraftField(\'unitNe\',this.value)"/></div></div>' +
     '<p class="settings-intro" style="margin-top:8px">If filled in, these are used instead of the name and unit above when an invoice is printed in Nepali. Numbers (qty, rate, amounts) convert to Nepali digits automatically either way.</p>';
@@ -2175,6 +2240,172 @@ function tapCatalogItem(catalogId) {
 }
 window.tapCatalogItem = tapCatalogItem;
 
+// ---------- Expenses (whole-company cost record) ----------
+function renderExpenses() {
+  let html = '<div class="toolbar"><div></div><button class="btn btn-primary" onclick="goto_(\'expenseNew\')">' + icon("plusCircle", 15) + ' Add expense</button></div>';
+  if (state.expenses.length === 0) {
+    html += emptyState("No expenses recorded yet", "Log raw materials, manufacturing labor, overhead, and every other cost from production through to sale — Financials pulls straight from here.", "Add your first expense", "goto_('expenseNew')");
+    return html;
+  }
+  const total = state.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const unpaid = state.expenses.filter(e => !e.paid).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  html += '<div class="stat-row" style="margin-bottom:18px">' +
+    '<div class="stat-card"><div class="stat-label">Total recorded</div><div class="stat-value">' + fmt(total) + '</div></div>' +
+    '<div class="stat-card"><div class="stat-label">Unpaid / payable</div><div class="stat-value">' + fmt(unpaid) + '</div></div>' +
+    '<div class="stat-card"><div class="stat-label">Entries</div><div class="stat-value">' + state.expenses.length + '</div></div>' +
+    '</div>';
+  html += '<div class="table-wrap"><div class="t-head" style="grid-template-columns:100px 1fr 1.2fr 1fr 110px 90px 90px">' +
+    '<div>Date</div><div>Category</div><div>Description</div><div>Seller / Due to</div><div>Amount</div><div>Status</div><div></div></div>';
+  state.expenses.forEach(e => {
+    const sellerDue = [e.sellerName, (!e.paid && e.dueTo) ? ("Due: " + e.dueTo) : ""].filter(Boolean).join(" · ");
+    html += '<div class="t-row" style="grid-template-columns:100px 1fr 1.2fr 1fr 110px 90px 90px">' +
+      '<div class="t-date">' + esc(e.date) + '</div>' +
+      '<div>' + esc(expenseCategoryLabel(e.category)) + '</div>' +
+      '<div class="t-client">' + esc(e.description || "—") + '</div>' +
+      '<div>' + esc(sellerDue || "—") + '</div>' +
+      '<div class="t-amt">' + fmt(e.amount) + '</div>' +
+      '<div><span class="pill ' + (e.paid ? "paid" : "unpaid") + '"><span class="dot ' + (e.paid ? "paid" : "unpaid") + '"></span>' + (e.paid ? "Paid" : "Unpaid") + '</span></div>' +
+      '<div class="t-actions"><button class="btn-icon" onclick="goto_(\'expenseEdit\',\'' + e.id + '\')" title="Edit">' + icon("pencil", 14) + '</button>' +
+      '<button class="btn-icon" onclick="deleteExpense(\'' + e.id + '\')" title="Delete">' + icon("trash", 14) + '</button></div></div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderExpenseForm() {
+  const e = state.expenseDraft;
+  let html = '<button class="btn btn-ghost" style="margin-bottom:16px" onclick="goto_(\'expenses\')">' + icon("arrowLeft", 15) + ' Back</button>';
+  html += '<div class="form-card" style="max-width:520px">';
+  html += '<div class="form-grid"><div><label class="field-label">Date</label><input type="date" class="field-input" value="' + esc(e.date) + '" oninput="updateExpenseDraftField(\'date\',this.value)"/></div>' +
+    '<div><label class="field-label">Category</label><select class="field-select" onchange="updateExpenseDraftField(\'category\',this.value)">' +
+    EXPENSE_CATEGORIES.map(([k, label]) => '<option value="' + k + '"' + (e.category === k ? " selected" : "") + '>' + esc(label) + '</option>').join("") + '</select></div></div>';
+  html += '<label class="field-label" style="margin-top:14px;display:block">Description</label><input class="field-input" value="' + esc(e.description) + '" placeholder="e.g. Green leaf purchase — Aug batch" oninput="updateExpenseDraftField(\'description\',this.value)"/>';
+  html += '<label class="field-label" style="margin-top:14px;display:block">Seller / Vendor name</label><input class="field-input" value="' + esc(e.sellerName || "") + '" placeholder="e.g. Himal Traders" oninput="updateExpenseDraftField(\'sellerName\',this.value)"/>';
+  html += '<div class="form-grid" style="margin-top:14px"><div><label class="field-label">Amount</label><input type="number" class="field-input" value="' + (e.amount || 0) + '" oninput="updateExpenseDraftField(\'amount\',this.value)"/></div>' +
+    '<div><label class="field-label">Status</label><div class="vat-toggle">' +
+    '<button type="button" class="vat-btn ' + (e.paid ? "active" : "") + '" onclick="updateExpenseDraftField(\'paid\',true); render();">Paid</button>' +
+    '<button type="button" class="vat-btn ' + (!e.paid ? "active" : "") + '" onclick="updateExpenseDraftField(\'paid\',false); render();">Unpaid</button>' +
+    '</div></div></div>';
+  if (!e.paid) {
+    html += '<label class="field-label" style="margin-top:14px;display:block">Due to</label><input class="field-input" value="' + esc(e.dueTo || "") + '" placeholder="Who this payment is owed to (defaults to seller)" oninput="updateExpenseDraftField(\'dueTo\',this.value)"/>';
+  }
+  html += '<p class="settings-intro" style="margin-top:10px">Unpaid expenses show up as Accounts Payable on the Balance Sheet until marked paid.</p>';
+  html += '<div class="form-footer"><button class="btn btn-ghost" onclick="goto_(\'expenses\')">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="saveExpenseDraft()">' + icon("check", 15) + ' Save expense</button></div>';
+  html += '</div>';
+  return html;
+}
+function updateExpenseDraftField(field, value) { state.expenseDraft[field] = value; }
+window.updateExpenseDraftField = updateExpenseDraftField;
+async function saveExpenseDraft() {
+  const e = state.expenseDraft;
+  if (!e.date) { showToast("Date is required", "error"); return; }
+  if (!(Number(e.amount) > 0)) { showToast("Enter an amount greater than 0", "error"); return; }
+  if (!e.paid && !e.dueTo && e.sellerName) { e.dueTo = e.sellerName; }
+  try {
+    await saveExpenseToDb(e);
+    const idx = state.expenses.findIndex(x => x.id === e.id);
+    if (idx === -1) state.expenses.push(e); else state.expenses[idx] = e;
+    state.expenses.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+    goto_("expenses");
+  } catch (err) {
+    console.error(err);
+    showToast("Couldn't save the expense — try again", "error");
+  }
+}
+window.saveExpenseDraft = saveExpenseDraft;
+async function deleteExpense(id) {
+  try {
+    await deleteExpenseFromDb(id);
+    state.expenses = state.expenses.filter(e => e.id !== id);
+    render();
+  } catch (e) {
+    console.error(e);
+    showToast("Couldn't delete the expense — try again", "error");
+  }
+}
+window.deleteExpense = deleteExpense;
+
+// ---------- Sellers / Vendors (every purchase a given seller has ever
+// supplied, drawn from Expenses, newest first) ----------
+let sellerSearchQuery = "";
+function onSellerSearchInput(v) { sellerSearchQuery = v; renderSellersBodyOnly(); }
+window.onSellerSearchInput = onSellerSearchInput;
+
+function renderSellersBody() {
+  const bySeller = {};
+  state.expenses.forEach(e => {
+    const key = e.sellerName || "Unnamed seller";
+    if (!bySeller[key]) bySeller[key] = { total: 0, count: 0, unpaid: 0 };
+    const amt = Number(e.amount) || 0;
+    bySeller[key].total += amt; bySeller[key].count += 1;
+    if (!e.paid) bySeller[key].unpaid += amt;
+  });
+  let rows = Object.entries(bySeller).map(([name, v]) => Object.assign({ name }, v)).sort((a, b) => b.total - a.total);
+  if (rows.length === 0) return emptyState("No sellers yet", "Sellers appear here automatically once you record an expense with a seller name.", "Add your first expense", "goto_('expenseNew')");
+  const q = sellerSearchQuery.trim().toLowerCase();
+  if (q) rows = rows.filter(s => s.name.toLowerCase().includes(q));
+  if (rows.length === 0) return emptyState("No matches", "Try a different search term.", null, "");
+  let html = "";
+  rows.forEach(s => {
+    html += '<div class="client-card" style="cursor:pointer" onclick="goto_(\'sellerDetail\',\'' + jsStr(s.name) + '\')"><div><div class="client-card-name">' + esc(s.name) + '</div>' +
+      '<div class="client-card-meta">' + s.count + ' purchase' + (s.count === 1 ? "" : "s") + '</div></div>' +
+      '<div class="client-figs"><div style="text-align:right"><div class="fig-label">Total spent</div><div class="fig-value">' + fmt(s.total) + '</div></div>';
+    if (s.unpaid > 0) html += '<div style="text-align:right"><div class="fig-label">Due to them</div><div class="fig-value" style="color:var(--amber)">' + fmt(s.unpaid) + '</div></div>';
+    html += '</div></div>';
+  });
+  return html;
+}
+function renderSellersBodyOnly() {
+  const el = document.getElementById("sellers-body");
+  if (el) el.innerHTML = renderSellersBody();
+}
+function renderSellers() {
+  if (state.expenses.length === 0) return renderSellersBody();
+  return '<div class="toolbar"><div class="search-wrap">' + icon("search", 15) +
+    '<input class="search-input" placeholder="Search seller" oninput="onSellerSearchInput(this.value)" value="' + esc(sellerSearchQuery) + '"/></div></div>' +
+    '<div id="sellers-body">' + renderSellersBody() + '</div>';
+}
+
+function renderSellerDetail() {
+  const name = state.activeSellerName || "";
+  const key = normName(name);
+  const backBtn = '<button class="btn btn-ghost" style="margin-bottom:16px" onclick="goto_(\'sellers\')">' + icon("arrowLeft", 15) + ' Back to sellers</button>';
+  const purchases = state.expenses.filter(e => normName(e.sellerName || "Unnamed seller") === key).sort((a, b) => new Date(b.date) - new Date(a.date));
+  if (purchases.length === 0) {
+    return backBtn + emptyState("No purchases found", "This seller has no expenses on record.", null, "");
+  }
+  const totalSpent = purchases.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const totalDue = purchases.filter(e => !e.paid).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+
+  let html = backBtn;
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px">' +
+    '<div><div class="topbar-eyebrow">Seller</div><div style="font-family:Georgia,serif;font-weight:700;font-size:20px;color:var(--charcoal)">' + esc(name) + '</div></div></div>';
+
+  html += '<div class="stat-row" style="margin-bottom:20px">' +
+    '<div class="stat-card"><div class="stat-label">Purchases</div><div class="stat-value">' + purchases.length + '</div></div>' +
+    '<div class="stat-card"><div class="stat-label">Total spent</div><div class="stat-value">' + fmt(totalSpent) + '</div></div>' +
+    '<div class="stat-card"><div class="stat-label">Due to them</div><div class="stat-value" style="' + (totalDue > 0 ? "color:var(--amber)" : "") + '">' + fmt(totalDue) + '</div></div>' +
+    '</div>';
+
+  html += '<div class="section-title" style="margin-bottom:10px">Purchase history</div>';
+  html += '<div class="table-wrap"><div class="t-head" style="grid-template-columns:100px 1fr 1.4fr 1fr 110px 90px">' +
+    '<div>Date</div><div>Category</div><div>Item / description</div><div>Due to</div><div>Amount</div><div>Status</div></div>';
+  purchases.forEach(e => {
+    html += '<div class="t-row" style="grid-template-columns:100px 1fr 1.4fr 1fr 110px 90px;cursor:pointer" onclick="goto_(\'expenseEdit\',\'' + e.id + '\')">' +
+      '<div class="t-date">' + esc(e.date) + '</div>' +
+      '<div>' + esc(expenseCategoryLabel(e.category)) + '</div>' +
+      '<div class="t-client">' + esc(e.description || "—") + '</div>' +
+      '<div>' + esc((!e.paid && e.dueTo) ? e.dueTo : "—") + '</div>' +
+      '<div class="t-amt">' + fmt(e.amount) + '</div>' +
+      '<div><span class="pill ' + (e.paid ? "paid" : "unpaid") + '"><span class="dot ' + (e.paid ? "paid" : "unpaid") + '"></span>' + (e.paid ? "Paid" : "Unpaid") + '</span></div>' +
+      '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+
 // ---------- Sales review (aggregated item-level sales across invoices) ----------
 function setSalesFrom(v) { state.salesFrom = v; render(); }
 function setSalesTo(v) { state.salesTo = v; render(); }
@@ -2243,6 +2474,189 @@ function renderSales() {
   });
   html += '</div>';
   return html + filterHtml;
+}
+
+// ---------- Financial statements ----------
+// Cost of goods sold is derived from each sold line item's linked catalog entry
+// (falling back to a name match for older/hand-typed lines) times its "Cost per
+// unit". Everything else recorded in the Expenses tab is treated as a period
+// operating expense (manufacturing labor, overhead, admin, marketing, etc).
+function catalogCostForItem(it) {
+  if (it.catalogId) {
+    const c = state.catalogItems.find(c => c.id === it.catalogId);
+    if (c) return Number(c.cost) || 0;
+  }
+  const key = (it.desc || "").trim().toLowerCase();
+  if (key) {
+    const c = state.catalogItems.find(c => (c.name || "").trim().toLowerCase() === key);
+    if (c) return Number(c.cost) || 0;
+  }
+  return null;
+}
+function invoiceCOGS(inv) {
+  let cogs = 0, unknownCount = 0;
+  (inv.items || []).forEach(it => {
+    const qty = Number(it.qty) || 0;
+    if (!qty) return;
+    const unitCost = catalogCostForItem(it);
+    if (unitCost === null) { unknownCount++; return; }
+    cogs += unitCost * qty;
+  });
+  return { cogs, unknownCount };
+}
+function inDateRange(dateStr, from, to) {
+  const d = new Date(dateStr);
+  if (from && d < new Date(from)) return false;
+  if (to && d > new Date(to)) return false;
+  return true;
+}
+function computeIncomeStatement(from, to) {
+  const invs = state.invoices.filter(inv => inDateRange(inv.date, from, to));
+  let salesRevenue = 0, shippingRevenue = 0, cogs = 0, unknownCostLines = 0;
+  invs.forEach(inv => {
+    const t = invoiceTotals(inv);
+    salesRevenue += t.subtotal; shippingRevenue += t.shipping;
+    const c = invoiceCOGS(inv);
+    cogs += c.cogs; unknownCostLines += c.unknownCount;
+  });
+  const totalRevenue = salesRevenue + shippingRevenue;
+  const grossProfit = totalRevenue - cogs;
+  const exps = state.expenses.filter(e => inDateRange(e.date, from, to));
+  const byCat = {};
+  let totalOpEx = 0;
+  exps.forEach(e => { const k = e.category || "other"; byCat[k] = (byCat[k] || 0) + (Number(e.amount) || 0); totalOpEx += Number(e.amount) || 0; });
+  return {
+    invoiceCount: invs.length, salesRevenue, shippingRevenue, totalRevenue,
+    cogs, unknownCostLines, grossProfit, byCat, totalOpEx, netIncome: grossProfit - totalOpEx,
+  };
+}
+// Cost of goods sold is modeled as a cash cost incurred at the time of sale (this
+// app doesn't track a separate raw-material inventory or its own payables), which
+// is what keeps Assets == Liabilities + Equity below without full double-entry books.
+function computeBalanceSheet(asOf) {
+  const stmt = computeIncomeStatement(null, asOf);
+  const invsUpTo = state.invoices.filter(inv => inDateRange(inv.date, null, asOf));
+  const cashCollected = invsUpTo.reduce((s, inv) => s + (Number(inv.amountPaid) || 0), 0);
+  const accountsReceivable = invsUpTo.reduce((s, inv) => s + invoiceTotals(inv).due, 0);
+  const expensesUpTo = state.expenses.filter(e => inDateRange(e.date, null, asOf));
+  const cashExpensesPaid = expensesUpTo.filter(e => e.paid).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const accountsPayable = expensesUpTo.filter(e => !e.paid).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const ownersCapital = Number(state.company.openingCash) || 0;
+  const cash = ownersCapital + cashCollected - cashExpensesPaid - stmt.cogs;
+  const totalAssets = cash + accountsReceivable;
+  const totalLiabilities = accountsPayable;
+  const retainedEarnings = stmt.netIncome;
+  const totalEquity = ownersCapital + retainedEarnings;
+  return { asOf: asOf || todayISO(), cash, accountsReceivable, totalAssets, accountsPayable, totalLiabilities, ownersCapital, retainedEarnings, totalEquity };
+}
+function computeCashFlow(from, to) {
+  const invs = state.invoices.filter(inv => inDateRange(inv.date, from, to));
+  const cashCollected = invs.reduce((s, inv) => s + (Number(inv.amountPaid) || 0), 0);
+  const cogsForPeriod = invs.reduce((s, inv) => s + invoiceCOGS(inv).cogs, 0);
+  const exps = state.expenses.filter(e => inDateRange(e.date, from, to));
+  const cashExpensesPaid = exps.filter(e => e.paid).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const netCashFromOps = cashCollected - cogsForPeriod - cashExpensesPaid;
+  let beginningCash;
+  if (from) {
+    const dayBefore = new Date(from); dayBefore.setDate(dayBefore.getDate() - 1);
+    beginningCash = computeBalanceSheet(dayBefore.toISOString().slice(0, 10)).cash;
+  } else {
+    beginningCash = Number(state.company.openingCash) || 0;
+  }
+  return { cashCollected, cogsForPeriod, cashExpensesPaid, netCashFromOps, beginningCash, endingCash: beginningCash + netCashFromOps };
+}
+
+function setFinTab(t) { state.finTab = t; render(); }
+function setFinFrom(v) { state.finFrom = v; render(); }
+function setFinTo(v) { state.finTo = v; render(); }
+function setFinAsOf(v) { state.finAsOf = v; render(); }
+window.setFinTab = setFinTab; window.setFinFrom = setFinFrom; window.setFinTo = setFinTo; window.setFinAsOf = setFinAsOf;
+
+function finRow(label, val, opts) {
+  opts = opts || {};
+  return '<tr' + (opts.bold ? ' style="font-weight:700;border-top:1px solid var(--line)"' : '') + '>' +
+    '<td>' + (opts.indent ? '&nbsp;&nbsp;&nbsp;&nbsp;' : '') + esc(label) + '</td>' +
+    '<td class="num">' + fmt(val) + '</td></tr>';
+}
+function finSectionHead(label) {
+  return '<tr><td colspan="2" style="padding-top:14px;font-weight:700;color:var(--charcoal-soft);text-transform:uppercase;font-size:11px;letter-spacing:.04em">' + esc(label) + '</td></tr>';
+}
+function finPeriodFilterCard() {
+  return '<div class="card" style="margin-bottom:18px"><div class="section-title">Period</div><div style="display:flex;gap:14px;margin-top:12px;flex-wrap:wrap">' +
+    '<div><label class="field-label">From</label><input type="date" class="field-input" value="' + esc(state.finFrom) + '" oninput="setFinFrom(this.value)"/></div>' +
+    '<div><label class="field-label">To</label><input type="date" class="field-input" value="' + esc(state.finTo) + '" oninput="setFinTo(this.value)"/></div></div>' +
+    '<p class="settings-intro" style="margin-top:8px">Leave blank to include everything on record.</p></div>';
+}
+
+function renderIncomeStatementTab() {
+  const s = computeIncomeStatement(state.finFrom, state.finTo);
+  let html = finPeriodFilterCard();
+  html += '<div class="sheet-wrap"><table class="sheet"><tbody>';
+  html += finRow("Sales revenue", s.salesRevenue);
+  html += finRow("Shipping / other revenue", s.shippingRevenue);
+  html += finRow("Total revenue", s.totalRevenue, { bold: true });
+  html += finRow("Cost of goods sold", -s.cogs);
+  html += finRow("Gross profit", s.grossProfit, { bold: true });
+  html += finSectionHead("Operating expenses");
+  EXPENSE_CATEGORIES.forEach(([k, label]) => { if (s.byCat[k]) html += finRow(label, s.byCat[k], { indent: true }); });
+  if (s.totalOpEx === 0) html += '<tr><td colspan="2" class="empty-row">None recorded for this period</td></tr>';
+  html += finRow("Total operating expenses", -s.totalOpEx, { bold: true });
+  html += finRow("Net income", s.netIncome, { bold: true });
+  html += '</tbody></table></div>';
+  html += '<div class="stat-row" style="margin-top:16px">' +
+    '<div class="stat-card"><div class="stat-label">Invoices in period</div><div class="stat-value">' + s.invoiceCount + '</div></div>' +
+    '<div class="stat-card"><div class="stat-label">Gross margin</div><div class="stat-value">' + (s.totalRevenue > 0 ? ((s.grossProfit / s.totalRevenue) * 100).toFixed(1) + '%' : '—') + '</div></div>' +
+    '<div class="stat-card"><div class="stat-label">Net margin</div><div class="stat-value">' + (s.totalRevenue > 0 ? ((s.netIncome / s.totalRevenue) * 100).toFixed(1) + '%' : '—') + '</div></div>' +
+    '</div>';
+  if (s.unknownCostLines > 0) html += '<p class="settings-intro" style="margin-top:12px">' + icon("alertTriangle", 13) + ' ' + s.unknownCostLines + ' sold line item(s) have no matching catalog cost, so Cost of Goods Sold may be understated. Set a "Cost per unit" on those items in the Item Catalog.</p>';
+  return html;
+}
+
+function renderBalanceSheetTab() {
+  const bs = computeBalanceSheet(state.finAsOf);
+  let html = '<div class="card" style="margin-bottom:18px"><div class="section-title">As of</div><div style="margin-top:12px;max-width:220px"><input type="date" class="field-input" value="' + esc(state.finAsOf) + '" oninput="setFinAsOf(this.value)"/></div></div>';
+  html += '<div class="sheet-wrap"><table class="sheet"><tbody>';
+  html += finSectionHead("Assets");
+  html += finRow("Cash", bs.cash, { indent: true });
+  html += finRow("Accounts receivable", bs.accountsReceivable, { indent: true });
+  html += finRow("Total assets", bs.totalAssets, { bold: true });
+  html += finSectionHead("Liabilities");
+  html += finRow("Accounts payable", bs.accountsPayable, { indent: true });
+  html += finRow("Total liabilities", bs.totalLiabilities, { bold: true });
+  html += finSectionHead("Equity");
+  html += finRow("Owner's capital (opening cash)", bs.ownersCapital, { indent: true });
+  html += finRow("Retained earnings", bs.retainedEarnings, { indent: true });
+  html += finRow("Total equity", bs.totalEquity, { bold: true });
+  html += finRow("Total liabilities + equity", bs.totalLiabilities + bs.totalEquity, { bold: true });
+  html += '</tbody></table></div>';
+  html += '<p class="settings-intro" style="margin-top:12px">Simplified management balance sheet: cost of goods sold is treated as a cash cost at time of sale, so no separate raw-material inventory or matching payables are tracked. Set an accurate "Opening cash balance" under Settings → Company so this reconciles with your real bank/cash balance — and have an accountant review before relying on it for statutory filings.</p>';
+  return html;
+}
+
+function renderCashFlowTab() {
+  const cf = computeCashFlow(state.finFrom, state.finTo);
+  let html = finPeriodFilterCard();
+  html += '<div class="sheet-wrap"><table class="sheet"><tbody>';
+  html += finSectionHead("Cash flow from operations");
+  html += finRow("Cash collected from clients", cf.cashCollected, { indent: true });
+  html += finRow("Cash paid for cost of goods", -cf.cogsForPeriod, { indent: true });
+  html += finRow("Cash paid for operating expenses", -cf.cashExpensesPaid, { indent: true });
+  html += finRow("Net cash from operations", cf.netCashFromOps, { bold: true });
+  html += '<tr style="border-top:1px solid var(--line)"><td style="padding-top:14px">Beginning cash</td><td class="num" style="padding-top:14px">' + fmt(cf.beginningCash) + '</td></tr>';
+  html += finRow("Ending cash", cf.endingCash, { bold: true });
+  html += '</tbody></table></div>';
+  html += '<p class="settings-intro" style="margin-top:12px">Payment dates aren\'t tracked separately from invoice dates, so cash collected is approximated from each invoice\'s current "Amount paid" against its invoice date. No financing or investing activity (loans, equipment purchases) is tracked separately — everything here is operating cash flow.</p>';
+  return html;
+}
+
+function renderFinTabs() {
+  const tabs = [["income", "Income statement"], ["balance", "Balance sheet"], ["cashflow", "Cash flow"]];
+  return '<div class="settings-tabs">' + tabs.map(([k, label]) =>
+    '<button class="settings-tab' + (state.finTab === k ? ' active' : '') + '" onclick="setFinTab(\'' + k + '\')">' + esc(label) + '</button>').join("") + '</div>';
+}
+function renderFinancials() {
+  const tabFns = { income: renderIncomeStatementTab, balance: renderBalanceSheetTab, cashflow: renderCashFlowTab };
+  return renderFinTabs() + (tabFns[state.finTab] || renderIncomeStatementTab)();
 }
 
 function renderFormTotalsOnly() {
@@ -2455,7 +2869,10 @@ function renderCompanyTab() {
   fields.forEach(([k, label]) => {
     html += '<div><label class="field-label">' + label + '</label><input class="field-input" data-k="' + k + '" value="' + esc(c[k]) + '"' + (ro ? ' disabled' : '') + '/></div>';
   });
-  html += '</div>' + (ro ? '' : '<button class="btn btn-primary" id="settings-save-btn" style="margin-top:20px" onclick="saveCompanyForm()">' + icon("check", 15) + ' Save changes</button>') + '</div>';
+  html += '<div><label class="field-label">Opening cash balance</label><input type="number" class="field-input" data-k="openingCash" value="' + (Number(c.openingCash) || 0) + '"' + (ro ? ' disabled' : '') + '/></div>';
+  html += '</div>' +
+    '<p class="settings-intro" style="margin-top:10px">Opening cash balance is the cash on hand before this app started tracking anything — it\'s used as the starting point for the Balance Sheet and Cash Flow statement under Financials.</p>' +
+    (ro ? '' : '<button class="btn btn-primary" id="settings-save-btn" style="margin-top:20px" onclick="saveCompanyForm()">' + icon("check", 15) + ' Save changes</button>') + '</div>';
   return html;
 }
 
@@ -2536,7 +2953,9 @@ function render() {
       '<div style="font-size:9.5px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;margin-top:2px;color:' + (ro ? 'var(--amber)' : '#7DAF8F') + '">' + (ro ? 'Moderator · read-only settings' : 'Admin') + '</div>';
   }
   const pageFns = { dashboard: renderDashboard, list: renderList, clients: renderClients, clientDetail: renderClientDetail, settings: renderSettings, new: renderForm, edit: renderForm, view: renderView,
-    items: renderItems, itemNew: renderItemForm, itemEdit: renderItemForm, sales: renderSales };
+    items: renderItems, itemNew: renderItemForm, itemEdit: renderItemForm, sales: renderSales,
+    expenses: renderExpenses, expenseNew: renderExpenseForm, expenseEdit: renderExpenseForm, financials: renderFinancials,
+    sellers: renderSellers, sellerDetail: renderSellerDetail };
   document.getElementById("main-content").innerHTML = (pageFns[state.page] || renderDashboard)();
   if (state.page === "new" || state.page === "edit") { renderFormTotalsOnly(); if (formError) liveValidateClientName(); updateClientDueInfo(); updateSaveButtonState(); }
   if (state.page === "new" && autofocusClientName) {
