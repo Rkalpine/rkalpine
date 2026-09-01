@@ -4,7 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>RK Alpine Agro Processing Udhyog — Invoices</title>
-  <link rel="icon" href="logo.png" type="image/png" />
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap');
   @font-face { font-family: 'system'; src: local('Arial'); }
@@ -131,8 +130,12 @@
     transition: border-color 0.15s ease, box-shadow 0.15s ease; }
   .search-input:focus { border-color: var(--orange); box-shadow: 0 0 0 3px var(--orange-soft); }
 
-  .table-wrap { background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-sm); }
+  .table-wrap { background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow-x: auto; overflow-y: hidden; box-shadow: var(--shadow-sm); }
   .t-head, .t-row { display: grid; grid-template-columns: 1.1fr 1.6fr 1fr 1fr 0.9fr 130px; align-items: center; }
+  .t-head.cols-purchases, .t-row.cols-purchases { grid-template-columns: 100px 1.6fr 60px 80px 90px 90px 90px 110px; }
+  .t-head.cols-sales, .t-row.cols-sales { grid-template-columns: 2fr 1fr 1fr 1fr; }
+  .t-head.cols-expenses, .t-row.cols-expenses { grid-template-columns: 1fr 1.1fr 1.3fr 1fr 1fr 1fr 1fr 40px; }
+  .t-head.cols-txns, .t-row.cols-txns { grid-template-columns: 1fr 1.6fr 2fr 1fr 1fr 40px; }
   .t-row { position: relative; transition: background 0.15s ease; border-left: 3px solid transparent; }
   .t-row::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
   .t-row.row-paid::before { background: var(--green); }
@@ -215,9 +218,9 @@
   .status-filter-count { font-size: 9.5px; font-weight: 800; opacity: 0.7; margin-left: 1px; }
 
   .items-table { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin-bottom: 6px; }
-  .items-head { display: grid; grid-template-columns: 0.7fr 92px 56px 70px 100px 26px; gap: 6px; background: var(--paper-dim);
+  .items-head { display: grid; grid-template-columns: 0.7fr 84px 52px 65px 65px 100px 26px; gap: 6px; background: var(--paper-dim);
     padding: 8px 10px; font-size: 11px; font-weight: 600; color: var(--charcoal-soft); text-transform: uppercase; }
-  .items-row { display: grid; grid-template-columns: 0.7fr 92px 56px 70px 100px 26px; gap: 6px; padding: 8px 10px;
+  .items-row { display: grid; grid-template-columns: 0.7fr 84px 52px 65px 65px 100px 26px; gap: 6px; padding: 8px 10px;
     align-items: center; border-top: 1px solid var(--line); position: relative; }
   .items-row input { border: none; padding: 4px 2px; min-width: 0; }
   .items-row input.locked-field { background: var(--paper-dim); color: var(--charcoal-soft); cursor: not-allowed; border-radius: 4px; }
@@ -330,6 +333,17 @@
     .totals-box { min-width: 0; width: 100%; }
     .table-wrap { overflow-x: auto; }
     .t-head, .t-row { grid-template-columns: 110px 140px 90px 90px 80px 120px; width: max-content; min-width: 100%; }
+    .t-head.cols-purchases, .t-row.cols-purchases { grid-template-columns: 88px 150px 46px 70px 80px 80px 80px 96px; width: max-content; min-width: 100%; }
+    .t-head.cols-sales, .t-row.cols-sales { grid-template-columns: 170px 90px 90px 100px; width: max-content; min-width: 100%; }
+    .t-head.cols-expenses, .t-row.cols-expenses { grid-template-columns: 90px 110px 150px 110px 90px 80px 90px 36px; width: max-content; min-width: 100%; }
+    .t-head.cols-txns, .t-row.cols-txns { grid-template-columns: 90px 160px 180px 90px 90px 36px; width: max-content; min-width: 100%; }
+    .settings-tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .settings-tabs::-webkit-scrollbar { display: none; }
+    .settings-tab { flex-shrink: 0; white-space: nowrap; }
+    .chart { overflow-x: auto; height: 170px; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+    .bar-col { flex: 0 0 52px; }
+    .bar-val { font-size: 9.5px; white-space: nowrap; }
+    .bar-month { font-size: 10.5px; max-width: 52px !important; }
     .doc-totals > div { width: 100% !important; }
     .invoice-doc { padding: 22px 16px; }
     .invoice-head { flex-direction: column; gap: 14px; }
@@ -573,7 +587,7 @@ const ICON_PATHS = {
   barChart: "M12 20V10M18 20V4M6 20v-4",
   table: "M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18",
   download: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3",
-  truck: "M1 3h15v13H1zM16 8h4l3 3v5h-7V8zM5.5 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM18.5 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",
+  creditCard: "M21 4H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM1 10h22",
 };
 function icon(name, size) {
   size = size || 16;
@@ -617,6 +631,31 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const CURRENCY = "Rs.";
 function uid() { return crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2, 8)); }
 function todayISO() { return new Date().toISOString().slice(0, 10); }
+function addDaysISO(iso, n) {
+  if (!iso) return iso;
+  const d = new Date(iso);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+// Approximates the Nepali (Bikram Sambat) fiscal-year quarter a date falls
+// in. The fiscal year runs Shrawan 1 - Ashad end (mid-July to mid-July); we
+// map that to fixed Gregorian cut-offs since exact BS conversion needs a
+// calendar table. Boundaries can be off by a day in some years — good enough
+// for choosing a sensible default reporting period, always editable by hand.
+function fiscalQuarterBounds(d) {
+  d = d || new Date();
+  const y = d.getUTCFullYear();
+  const boundary = Date.UTC(y, 6, 16); // Jul 16
+  const fy = d.getTime() >= boundary ? y : y - 1;
+  const quarters = [
+    ["Q1 (Shrawan\u2013Ashwin)", Date.UTC(fy, 6, 16), Date.UTC(fy, 9, 16)],
+    ["Q2 (Kartik\u2013Poush)", Date.UTC(fy, 9, 17), Date.UTC(fy + 1, 0, 14)],
+    ["Q3 (Magh\u2013Chaitra)", Date.UTC(fy + 1, 0, 15), Date.UTC(fy + 1, 3, 13)],
+    ["Q4 (Baisakh\u2013Ashad)", Date.UTC(fy + 1, 3, 14), Date.UTC(fy + 1, 6, 15)],
+  ];
+  const hit = quarters.find(([, from, to]) => d.getTime() >= from && d.getTime() <= to) || quarters[0];
+  return { label: hit[0], from: new Date(hit[1]).toISOString().slice(0, 10), to: new Date(hit[2]).toISOString().slice(0, 10), fyLabel: fy + "/" + String((fy + 1) % 100).padStart(2, "0") };
+}
 function fmt(n) { return CURRENCY + " " + (Math.round((n + Number.EPSILON) * 100) / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 }); }
 function monthLabel(d) { return new Date(d).toLocaleString("en-US", { month: "short", year: "2-digit" }); }
 function esc(s) { return (s || "").toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
@@ -740,7 +779,6 @@ const defaultCompany = {
   phone: "9815057551",
   email: "rkalpine@gmail.com",
   pan: "129956855",
-  openingCash: 0,
 };
 
 // ---------- Supabase data layer ----------
@@ -757,11 +795,10 @@ function dbCompanyToApp(row) {
     name: row.name || defaultCompany.name, nameNe: row.name_ne || "",
     address: row.address || "", addressNe: row.address_ne || "",
     phone: row.phone || "", email: row.email || "", pan: row.pan || "",
-    openingCash: Number(row.opening_cash) || 0,
   };
 }
 function appCompanyToDbRow(c) {
-  return { id: 1, name: c.name || "", name_ne: c.nameNe || "", address: c.address || "", address_ne: c.addressNe || "", phone: c.phone || "", email: c.email || "", pan: c.pan || "", opening_cash: Number(c.openingCash) || 0 };
+  return { id: 1, name: c.name || "", name_ne: c.nameNe || "", address: c.address || "", address_ne: c.addressNe || "", phone: c.phone || "", email: c.email || "", pan: c.pan || "" };
 }
 async function fetchCompany() {
   const { data, error } = await sb.from("company").select("*").eq("id", 1).maybeSingle();
@@ -793,30 +830,43 @@ async function deleteCatalogItemFromDb(id) {
   if (error) throw error;
 }
 
-// ---------- Expenses (whole-company cost record: manufacturing through sales) ----------
+// ---------- Cost accounting data layer ----------
+// Three extra tables back the Accounting section:
+//  - expenses: day-to-day costs (wages, rent, transport, raw materials, other)
+//  - acct_transactions: non-trading cash movements (owner capital/drawings,
+//    loans, fixed asset purchases/disposals)
+//  - acct_opening: a single row (id=1) holding opening balances as of a date,
+//    the starting point the statements build on top of.
 const EXPENSE_CATEGORIES = [
-  ["raw_materials", "Raw materials"],
-  ["manufacturing", "Manufacturing / production labor"],
-  ["packaging", "Packaging"],
-  ["utilities", "Utilities"],
-  ["rent", "Rent / facilities"],
-  ["logistics", "Transport / logistics"],
-  ["marketing", "Marketing / sales"],
-  ["salaries", "Salaries / admin"],
-  ["equipment", "Equipment / capital"],
-  ["other", "Other"],
+  ["raw_materials", "Raw materials / purchases"],
+  ["wages", "Salaries & wages"],
+  ["rent", "Rent"],
+  ["utilities", "Utilities (electricity, water)"],
+  ["transport", "Transport, fuel & delivery"],
+  ["packaging", "Packaging & consumables"],
+  ["repairs", "Repairs & maintenance"],
+  ["marketing", "Marketing & advertising"],
+  ["communication", "Communication (phone/internet)"],
+  ["insurance", "Insurance"],
+  ["bank_charges", "Bank charges & interest"],
+  ["professional_fees", "Professional fees (legal/audit)"],
+  ["other", "Other overhead"],
 ];
-function expenseCategoryLabel(k) { const f = EXPENSE_CATEGORIES.find(c => c[0] === k); return f ? f[1] : "Other"; }
-function newBlankExpense() { return { id: uid(), date: todayISO(), category: "raw_materials", description: "", amount: 0, paid: true, sellerName: "", dueTo: "" }; }
+// Old category keys from before this list grew — kept so existing records
+// still show a sensible label instead of falling back to "Other overhead".
+const EXPENSE_CATEGORY_LEGACY_LABELS = { rent_utilities: "Rent & utilities (legacy)" };
+function expenseCategoryLabel(k) {
+  const f = EXPENSE_CATEGORIES.find(c => c[0] === k);
+  if (f) return f[1];
+  if (EXPENSE_CATEGORY_LEGACY_LABELS[k]) return EXPENSE_CATEGORY_LEGACY_LABELS[k];
+  return "Other overhead";
+}
+
 function dbExpenseToApp(row) {
-  return { id: row.id, date: row.date, category: row.category || "other", description: row.description || "", amount: Number(row.amount) || 0, paid: !!row.paid, sellerName: row.seller_name || "", dueTo: row.due_to || "", createdByName: row.created_by_name || "" };
+  return { id: row.id, date: row.date, category: row.category || "other", description: row.description || "", qty: row.qty == null ? 1 : Number(row.qty), rate: Number(row.rate) || 0, amount: Number(row.amount) || 0, paymentMethod: row.payment_method || "cash", vendorName: row.vendor_name || "", createdBy: row.created_by_name || "" };
 }
 function appExpenseToDbRow(e) {
-  return {
-    id: e.id, date: e.date || todayISO(), category: e.category || "other", description: e.description || "", amount: Number(e.amount) || 0, paid: !!e.paid,
-    seller_name: e.sellerName || "", due_to: e.dueTo || "",
-    created_by: state.currentAdmin ? state.currentAdmin.id : null, created_by_name: state.currentAdmin ? state.currentAdmin.name : "",
-  };
+  return { id: e.id, date: e.date, category: e.category || "other", description: e.description || "", qty: e.qty == null ? 1 : Number(e.qty), rate: Number(e.rate) || 0, amount: Number(e.amount) || 0, payment_method: e.paymentMethod || "cash", vendor_name: e.vendorName || "", created_by: state.currentAdmin ? state.currentAdmin.id : null, created_by_name: e.createdBy || (state.currentAdmin ? state.currentAdmin.name : "") };
 }
 async function fetchExpenses() {
   const { data, error } = await sb.from("expenses").select("*").order("date", { ascending: false });
@@ -832,9 +882,84 @@ async function deleteExpenseFromDb(id) {
   if (error) throw error;
 }
 
+const ACCT_TXN_TYPES = [
+  ["capital_in", "Owner's capital contribution"],
+  ["drawing", "Owner's drawing (withdrawal)"],
+  ["loan_in", "Loan received"],
+  ["loan_repay", "Loan repayment"],
+  ["asset_purchase", "Fixed asset purchase"],
+  ["asset_disposal", "Fixed asset sale / disposal"],
+];
+function acctTxnTypeLabel(k) { const f = ACCT_TXN_TYPES.find(t => t[0] === k); return f ? f[1] : k; }
+// Whether a transaction of this type increases (+1) or decreases (-1) cash/bank.
+function acctTxnCashSign(type) { return (type === "drawing" || type === "loan_repay" || type === "asset_purchase") ? -1 : 1; }
+
+// Depreciation pools per Nepal's Income Tax Act, 2058 (Schedule 2). Pools
+// A-D are reducing-balance (written-down value) at a fixed rate. Pool E
+// (intangible assets) is different: with an ascertainable useful life,
+// the Act amortizes it straight-line over that life instead — so Pool E
+// carries a useful-life setting (see Opening Balances) rather than a rate.
+// These are the commonly cited rates — the Finance Act can revise them each
+// year, so verify against the current IRD schedule or your tax advisor
+// before using these figures to file. Any fixed-asset purchase/disposal not
+// given a pool defaults to Pool D, the Act's catch-all category.
+const ASSET_POOLS = [
+  ["poolA", "Pool A — Buildings & structures", 5],
+  ["poolB", "Pool B — Computers, furniture & office equipment", 25],
+  ["poolC", "Pool C — Vehicles (car, bus, minibus)", 20],
+  ["poolD", "Pool D — Machinery, equipment & other assets", 15],
+];
+const POOL_E = ["poolE", "Pool E — Intangible assets"];
+const ALL_ASSET_POOLS = ASSET_POOLS.concat([POOL_E]);
+function assetPoolLabel(k) { const f = ALL_ASSET_POOLS.find(p => p[0] === k); return f ? f[1] : assetPoolLabel("poolD"); }
+function assetPoolRate(k) { const f = ASSET_POOLS.find(p => p[0] === k); return f ? f[2] : 15; }
+
+function dbAcctTxnToApp(row) {
+  return { id: row.id, date: row.date, type: row.type || "capital_in", amount: Number(row.amount) || 0, paymentMethod: row.payment_method || "cash", poolCategory: row.pool_category || "", description: row.description || "", createdBy: row.created_by_name || "" };
+}
+function appAcctTxnToDbRow(t) {
+  return { id: t.id, date: t.date, type: t.type || "capital_in", amount: Number(t.amount) || 0, payment_method: t.paymentMethod || "cash", pool_category: t.poolCategory || null, description: t.description || "", created_by: state.currentAdmin ? state.currentAdmin.id : null, created_by_name: t.createdBy || (state.currentAdmin ? state.currentAdmin.name : "") };
+}
+async function fetchAcctTxns() {
+  const { data, error } = await sb.from("acct_transactions").select("*").order("date", { ascending: false });
+  if (error) { console.error(error); return []; }
+  return (data || []).map(dbAcctTxnToApp);
+}
+async function saveAcctTxnToDb(t) {
+  const { error } = await sb.from("acct_transactions").upsert(appAcctTxnToDbRow(t));
+  if (error) throw error;
+}
+async function deleteAcctTxnFromDb(id) {
+  const { error } = await sb.from("acct_transactions").delete().eq("id", id);
+  if (error) throw error;
+}
+
+const defaultOpening = { asOfDate: "", cash: 0, bank: 0, loansPayable: 0, ownersCapital: 0, openingInventory: 0, poolA: 0, poolB: 0, poolC: 0, poolD: 0, poolE: 0, poolEUsefulLifeYears: 5 };
+function dbOpeningToApp(row) {
+  if (!row) return Object.assign({}, defaultOpening);
+  let poolA = Number(row.pool_a_balance) || 0, poolB = Number(row.pool_b_balance) || 0, poolC = Number(row.pool_c_balance) || 0, poolD = Number(row.pool_d_balance) || 0, poolE = Number(row.pool_e_balance) || 0;
+  const legacyFA = Number(row.fixed_assets) || 0;
+  if (poolA + poolB + poolC + poolD + poolE === 0 && legacyFA > 0) poolD = legacyFA; // one-time carry-over from the old single Fixed Assets field
+  return { asOfDate: row.as_of_date || "", cash: Number(row.cash) || 0, bank: Number(row.bank) || 0, loansPayable: Number(row.loans_payable) || 0, ownersCapital: Number(row.owners_capital) || 0, openingInventory: Number(row.opening_inventory) || 0, poolA, poolB, poolC, poolD, poolE, poolEUsefulLifeYears: Number(row.pool_e_useful_life_years) || 5 };
+}
+function appOpeningToDbRow(o) {
+  return { id: 1, as_of_date: o.asOfDate || null, cash: Number(o.cash) || 0, bank: Number(o.bank) || 0, loans_payable: Number(o.loansPayable) || 0, owners_capital: Number(o.ownersCapital) || 0, opening_inventory: Number(o.openingInventory) || 0,
+    pool_a_balance: Number(o.poolA) || 0, pool_b_balance: Number(o.poolB) || 0, pool_c_balance: Number(o.poolC) || 0, pool_d_balance: Number(o.poolD) || 0, pool_e_balance: Number(o.poolE) || 0, pool_e_useful_life_years: Number(o.poolEUsefulLifeYears) || 5,
+    fixed_assets: 0, depreciation_rate_pct: 0 };
+}
+async function fetchOpening() {
+  const { data, error } = await sb.from("acct_opening").select("*").eq("id", 1).maybeSingle();
+  if (error) { console.error(error); return Object.assign({}, defaultOpening); }
+  return dbOpeningToApp(data);
+}
+async function saveOpeningToDb(o) {
+  const { error } = await sb.from("acct_opening").upsert(appOpeningToDbRow(o));
+  if (error) throw error;
+}
+
 function dbInvoiceToApp(row) {
   const items = (row.invoice_items || []).slice().sort((a, b) => (a.position || 0) - (b.position || 0))
-    .map(it => ({ id: it.id, desc: it.description || "", qty: Number(it.qty) || 0, unit: it.unit || "", rate: Number(it.rate) || 0, catalogId: it.catalog_id || null }));
+    .map(it => ({ id: it.id, desc: it.description || "", qty: Number(it.qty) || 0, unit: it.unit || "", rate: Number(it.rate) || 0, cost: Number(it.cost) || 0, catalogId: it.catalog_id || null }));
   return {
     id: row.id, number: row.number, date: row.date, dueDate: row.due_date || "",
     clientName: row.client_name || "", clientPhone: row.client_phone || "", clientAddress: row.client_address || "", clientPan: row.client_pan || "",
@@ -884,7 +1009,7 @@ async function saveInvoiceToDb(inv, isNew) {
   const { error: delErr } = await sb.from("invoice_items").delete().eq("invoice_id", inv.id);
   if (delErr) throw delErr;
   const itemRows = inv.items.map((it, idx) => ({
-    invoice_id: inv.id, id: it.id, position: idx, description: it.desc || "", qty: Number(it.qty) || 0, unit: it.unit || "", rate: Number(it.rate) || 0, catalog_id: it.catalogId || null,
+    invoice_id: inv.id, id: it.id, position: idx, description: it.desc || "", qty: Number(it.qty) || 0, unit: it.unit || "", rate: Number(it.rate) || 0, cost: Number(it.cost) || 0, catalog_id: it.catalogId || null,
   }));
   if (itemRows.length) {
     const { error: insErr } = await sb.from("invoice_items").insert(itemRows);
@@ -911,7 +1036,7 @@ async function permanentlyDeleteInvoiceInDb(id) {
 
 function newBlankCatalogItem() { return { id: uid(), name: "", nameNe: "", unit: "", unitNe: "", rate: 0, cost: 0, photo: "", description: "" }; }
 function peekNextInvoiceNumber() { return "Auto-assigned when saved"; }
-function newBlankItem() { return { id: uid(), desc: "", qty: 1, unit: "", rate: 0 }; }
+function newBlankItem() { return { id: uid(), desc: "", qty: 1, unit: "", rate: 0, cost: 0 }; }
 function newBlankInvoice() {
   return {
     id: uid(), number: peekNextInvoiceNumber(),
@@ -972,14 +1097,16 @@ async function saveAdminNameToDb(id, name) {
 // deleted-invoice records need admin names for "Deleted by <name>".
 async function loadAllData() {
   state.admins = await fetchAdmins();
-  const [company, catalogItems, invoices, deletedInvoices, expenses] = await Promise.all([
-    fetchCompany(), fetchCatalogItems(), fetchInvoices(), fetchDeletedInvoices(), fetchExpenses(),
+  const [company, catalogItems, invoices, deletedInvoices, expenses, acctTxns, opening] = await Promise.all([
+    fetchCompany(), fetchCatalogItems(), fetchInvoices(), fetchDeletedInvoices(), fetchExpenses(), fetchAcctTxns(), fetchOpening(),
   ]);
   state.company = company;
   state.catalogItems = catalogItems;
   state.invoices = invoices;
   state.deletedInvoices = deletedInvoices;
   state.expenses = expenses;
+  state.acctTxns = acctTxns;
+  state.opening = opening;
 }
 
 // ---------- App state ----------
@@ -998,13 +1125,17 @@ const state = {
   salesFrom: "",
   salesTo: "",
   activeClientName: "",
-  activeSellerName: "",
+  clientsTab: "customers",
   expenses: [],
+  acctTxns: [],
+  opening: Object.assign({}, defaultOpening),
+  openingDraft: null,
   expenseDraft: null,
-  finTab: "income",
-  finFrom: "",
-  finTo: "",
-  finAsOf: todayISO(),
+  acctTxnDraft: null,
+  acctTab: "expenses",
+  acctFrom: fiscalQuarterBounds().from,
+  acctTo: fiscalQuarterBounds().to,
+  balanceAsOf: todayISO(),
 };
 
 // ---------- Login gate ----------
@@ -1218,6 +1349,9 @@ function subscribeToLiveUpdates() {
     .on("postgres_changes", { event: "*", schema: "public", table: "invoices" }, refreshInvoicesQuietly)
     .on("postgres_changes", { event: "*", schema: "public", table: "invoice_items" }, refreshInvoicesQuietly)
     .on("postgres_changes", { event: "*", schema: "public", table: "catalog_items" }, refreshCatalogQuietly)
+    .on("postgres_changes", { event: "*", schema: "public", table: "expenses" }, refreshAcctQuietly)
+    .on("postgres_changes", { event: "*", schema: "public", table: "acct_transactions" }, refreshAcctQuietly)
+    .on("postgres_changes", { event: "*", schema: "public", table: "acct_opening" }, refreshAcctQuietly)
     .subscribe();
 }
 function unsubscribeFromLiveUpdates() {
@@ -1241,6 +1375,19 @@ async function refreshCatalogQuietly() {
     state.catalogItems = await fetchCatalogItems();
     if (state.page === "items") render();
   } catch (e) { console.error(e); }
+}
+let acctRefreshQueued = false;
+async function refreshAcctQuietly() {
+  if (acctRefreshQueued) return;
+  acctRefreshQueued = true;
+  setTimeout(async () => {
+    acctRefreshQueued = false;
+    try {
+      const [expenses, acctTxns, opening] = await Promise.all([fetchExpenses(), fetchAcctTxns(), fetchOpening()]);
+      state.expenses = expenses; state.acctTxns = acctTxns; state.opening = opening;
+      if (state.page === "accounting" || state.page === "dashboard") render();
+    } catch (e) { console.error(e); }
+  }, 400);
 }
 
 async function initLoginScreen() {
@@ -1283,10 +1430,7 @@ function goto_(page, id) {
   else if (page === "edit") { const inv = state.invoices.find(i => i.id === state.activeId); state.draft = JSON.parse(JSON.stringify(inv)); state.page = "edit"; formError = null; }
   else if (page === "itemNew") { state.catalogDraft = newBlankCatalogItem(); state.page = "itemNew"; }
   else if (page === "itemEdit") { const it = state.catalogItems.find(i => i.id === state.activeId); state.catalogDraft = JSON.parse(JSON.stringify(it)); state.page = "itemEdit"; }
-  else if (page === "expenseNew") { state.expenseDraft = newBlankExpense(); state.page = "expenseNew"; }
-  else if (page === "expenseEdit") { const e = state.expenses.find(x => x.id === state.activeId); state.expenseDraft = JSON.parse(JSON.stringify(e)); state.page = "expenseEdit"; }
   else if (page === "clientDetail") { state.activeClientName = id || ""; state.page = "clientDetail"; }
-  else if (page === "sellerDetail") { state.activeSellerName = id || ""; state.page = "sellerDetail"; }
   else { state.page = page; }
   render();
 }
@@ -1447,6 +1591,15 @@ function getKnownClientNames() {
   state.invoices.forEach(inv => {
     const key = normName(inv.clientName);
     if (key && !seen[key]) { seen[key] = true; names.push(inv.clientName); }
+  });
+  return names.sort((a, b) => a.localeCompare(b));
+}
+function getKnownVendorNames() {
+  const seen = {};
+  const names = [];
+  state.expenses.forEach(e => {
+    const key = normName(e.vendorName);
+    if (key && !seen[key]) { seen[key] = true; names.push(e.vendorName); }
   });
   return names.sort((a, b) => a.localeCompare(b));
 }
@@ -1616,7 +1769,6 @@ async function saveCompanyForm() {
     phone: f.querySelector('[data-k="phone"]').value,
     email: f.querySelector('[data-k="email"]').value,
     pan: f.querySelector('[data-k="pan"]').value,
-    openingCash: Number(f.querySelector('[data-k="openingCash"]').value) || 0,
   };
   const btn = document.getElementById("settings-save-btn");
   try {
@@ -1802,9 +1954,7 @@ function renderNav() {
     ["file", "list", "Invoices", ["list", "new", "edit", "view"]],
     ["image", "items", "Item Catalog", ["items", "itemNew", "itemEdit"]],
     ["barChart", "sales", "Sales Review", ["sales"]],
-    ["trendDown", "expenses", "Expenses", ["expenses", "expenseNew", "expenseEdit"]],
-    ["truck", "sellers", "Sellers", ["sellers", "sellerDetail"]],
-    ["table", "financials", "Financials", ["financials"]],
+    ["creditCard", "accounting", "Accounting", ["accounting"]],
     ["users", "clients", "Clients", ["clients", "clientDetail"]],
     ["settings", "settings", "Settings", ["settings"]],
   ];
@@ -1818,9 +1968,7 @@ function renderNav() {
 function renderTopbar() {
   document.getElementById("topbar-company").textContent = state.company.name;
   const titles = { dashboard: "Dashboard", list: "Invoices", clients: "Clients", clientDetail: state.activeClientName || "Client", settings: "Settings", new: "New invoice", edit: "Edit invoice",
-    items: "Item Catalog", itemNew: "New item", itemEdit: "Edit item", sales: "Sales Review",
-    expenses: "Expenses", expenseNew: "New expense", expenseEdit: "Edit expense", financials: "Financial Statements",
-    sellers: "Sellers", sellerDetail: state.activeSellerName || "Seller",
+    items: "Item Catalog", itemNew: "New item", itemEdit: "Edit item", sales: "Sales Review", accounting: "Accounting",
     view: (state.invoices.find(i => i.id === state.activeId) || {}).number || "Invoice" };
   document.getElementById("topbar-title").textContent = titles[state.page] || "";
 }
@@ -2025,7 +2173,8 @@ function renderClientsBody() {
   rows.forEach(c => {
     html += '<div class="client-card" style="cursor:pointer" onclick="goto_(\'clientDetail\',\'' + jsStr(c.name) + '\')"><div><div class="client-card-name">' + esc(c.name) + '</div>' +
       '<div class="client-card-meta">' + c.count + ' invoice' + (c.count === 1 ? "" : "s") + (c.phone ? ' · ' + esc(c.phone) : '') + '</div></div>' +
-      '<div class="client-figs"><div style="text-align:right"><div class="fig-label">Total billed</div><div class="fig-value">' + fmt(c.total) + '</div></div>';
+      '<div class="client-figs">' +
+      '<div style="text-align:right"><div class="fig-label">Revenue</div><div class="fig-value">' + fmt(c.total) + '</div></div>';
     if (c.unpaid > 0) html += '<div style="text-align:right"><div class="fig-label">Outstanding</div><div class="fig-value" style="color:var(--amber)">' + fmt(c.unpaid) + '</div></div>';
     html += '</div></div>';
   });
@@ -2047,12 +2196,17 @@ function renderClientDetail() {
     inv.items.forEach(it => {
       const qty = Number(it.qty) || 0;
       const rate = Number(it.rate) || 0;
-      purchases.push({ date: inv.date, desc: it.desc || "—", unit: it.unit || "", qty, rate, amount: qty * rate, invNumber: inv.number, invId: inv.id, status: inv.status });
+      const cost = invoiceLineCost(it);
+      const amount = qty * rate;
+      const costTotal = qty * cost;
+      purchases.push({ date: inv.date, desc: it.desc || "—", unit: it.unit || "", qty, rate, amount, cost, costTotal, profit: amount - costTotal, invNumber: inv.number, invId: inv.id, status: inv.status });
     });
   });
   purchases.sort((a, b) => new Date(b.date) - new Date(a.date));
   const totalSpent = invoices.reduce((s, i) => s + invoiceTotals(i).total, 0);
   const totalUnits = purchases.reduce((s, p) => s + p.qty, 0);
+  const totalCost = purchases.reduce((s, p) => s + p.costTotal, 0);
+  const totalProfit = totalSpent - totalCost;
 
   let html = backBtn;
   html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px">' +
@@ -2060,22 +2214,24 @@ function renderClientDetail() {
 
   html += '<div class="stat-row" style="margin-bottom:20px">' +
     '<div class="stat-card"><div class="stat-label">Invoices</div><div class="stat-value">' + invoices.length + '</div></div>' +
-    '<div class="stat-card"><div class="stat-label">Items purchased</div><div class="stat-value">' + purchases.length + '</div></div>' +
     '<div class="stat-card"><div class="stat-label">Units bought</div><div class="stat-value">' + totalUnits + '</div></div>' +
-    '<div class="stat-card"><div class="stat-label">Total spent</div><div class="stat-value">' + fmt(totalSpent) + '</div></div>' +
+    '<div class="stat-card"><div class="stat-label">Total spent (revenue)</div><div class="stat-value">' + fmt(totalSpent) + '</div></div>' +
+    '<div class="stat-card"><div class="stat-label">Total cost</div><div class="stat-value">' + fmt(totalCost) + '</div></div>' +
+    '<div class="stat-card"><div class="stat-label">Gross profit</div><div class="stat-value" style="color:' + (totalProfit >= 0 ? "var(--green)" : "var(--rust-deep)") + '">' + fmt(totalProfit) + '</div></div>' +
     '</div>';
 
   html += '<div class="section-title" style="margin-bottom:10px">Purchase history</div>';
-  html += '<div class="table-wrap"><div class="t-head" style="grid-template-columns:1fr 2fr 1fr 1fr 1fr 1fr 1fr">' +
-    '<div>Date</div><div>Item</div><div>Qty</div><div>Unit</div><div>Rate</div><div>Amount</div><div>Invoice</div></div>';
+  html += '<div class="table-wrap"><div class="t-head cols-purchases">' +
+    '<div>Date</div><div>Item</div><div>Qty</div><div>Rate</div><div>Amount</div><div>Cost</div><div>Profit</div><div>Invoice</div></div>';
   purchases.forEach(p => {
-    html += '<div class="t-row" style="grid-template-columns:1fr 2fr 1fr 1fr 1fr 1fr 1fr;cursor:pointer" onclick="goto_(\'view\',\'' + p.invId + '\')">' +
+    html += '<div class="t-row cols-purchases" style="cursor:pointer" onclick="goto_(\'view\',\'' + p.invId + '\')">' +
       '<div>' + esc(p.date) + '</div>' +
       '<div class="t-client">' + esc(p.desc) + '</div>' +
       '<div>' + p.qty + '</div>' +
-      '<div>' + esc(p.unit) + '</div>' +
       '<div>' + fmt(p.rate) + '</div>' +
       '<div class="t-amt">' + fmt(p.amount) + '</div>' +
+      '<div>' + fmt(p.costTotal) + '</div>' +
+      '<div class="t-amt" style="color:' + (p.profit >= 0 ? "var(--green)" : "var(--rust-deep)") + '">' + fmt(p.profit) + '</div>' +
       '<div><span class="pill ' + p.status + '"><span class="dot ' + p.status + '"></span>' + esc(p.invNumber) + '</span></div>' +
       '</div>';
   });
@@ -2086,13 +2242,64 @@ function renderClientsBodyOnly() {
   const el = document.getElementById("clients-body");
   if (el) el.innerHTML = renderClientsBody();
 }
+let supplierSearchQuery = "";
+function onSupplierSearchInput(v) { supplierSearchQuery = v; renderSuppliersBodyOnly(); }
+function renderSuppliersBodyOnly() {
+  const el = document.getElementById("suppliers-body");
+  if (el) el.innerHTML = renderSuppliersBody();
+}
+// Suppliers are built from expenses that have a Vendor / Supplier named —
+// there's no separate "purchase" record, an expense with a vendor IS the
+// purchase. Expenses with no vendor set (rent, wages, etc.) aren't from a
+// named supplier, so they don't appear here.
+function renderSuppliersBody() {
+  const byVendor = {};
+  state.expenses.forEach(e => {
+    const key = (e.vendorName || "").trim();
+    if (!key) return;
+    if (!byVendor[key]) byVendor[key] = { total: 0, count: 0 };
+    byVendor[key].total += Number(e.amount) || 0;
+    byVendor[key].count += 1;
+  });
+  let rows = Object.entries(byVendor).map(([name, v]) => Object.assign({ name }, v)).sort((a, b) => b.total - a.total);
+  if (rows.length === 0) return emptyState("No suppliers yet", "Suppliers appear here once you name a Vendor / Supplier while recording an expense.", "Record an expense", "goto_('accounting')");
+  const q = supplierSearchQuery.trim().toLowerCase();
+  if (q) rows = rows.filter(v => v.name.toLowerCase().includes(q));
+  if (rows.length === 0) return emptyState("No matches", "Try a different search term.", null, "");
+  let html = "";
+  rows.forEach(v => {
+    html += '<div class="client-card"><div><div class="client-card-name">' + esc(v.name) + '</div>' +
+      '<div class="client-card-meta">' + v.count + ' purchase' + (v.count === 1 ? "" : "s") + '</div></div>' +
+      '<div class="client-figs"><div style="text-align:right"><div class="fig-label">Total purchased</div><div class="fig-value">' + fmt(v.total) + '</div></div></div></div>';
+  });
+  return html;
+}
+function setClientsTab(tab) { state.clientsTab = tab; render(); }
+window.setClientsTab = setClientsTab;
 function renderClients() {
-  if (state.invoices.length === 0) return renderClientsBody();
-  return '<div class="toolbar"><div class="search-wrap">' + icon("search", 15) +
-    '<input class="search-input" placeholder="Search client" oninput="onClientSearchInput(this.value)" value="' + esc(clientSearchQuery) + '"/></div>' +
-    '<button class="btn btn-ghost" onclick="downloadSalesCSV()" title="Download every sale as a CSV file for analysis">' + icon("download", 15) + ' Download all sales</button>' +
-    '</div>' +
-    '<div id="clients-body">' + renderClientsBody() + '</div>';
+  const hasVendors = state.expenses.some(e => (e.vendorName || "").trim());
+  let html = '<div class="vat-toggle" style="margin-bottom:18px;flex-wrap:wrap">' +
+    '<button type="button" class="vat-btn' + (state.clientsTab === "customers" ? ' active' : '') + '" style="flex:1;min-width:150px" onclick="setClientsTab(\'customers\')">Customers <span style="font-weight:400;opacity:0.75">(who you sold to)</span></button>' +
+    '<button type="button" class="vat-btn' + (state.clientsTab === "suppliers" ? ' active' : '') + '" style="flex:1;min-width:150px" onclick="setClientsTab(\'suppliers\')">Suppliers <span style="font-weight:400;opacity:0.75">(who you bought from)</span></button>' +
+    '</div>';
+
+  if (state.clientsTab === "suppliers") {
+    if (hasVendors) {
+      html += '<div class="toolbar" style="margin-bottom:16px"><div class="search-wrap">' + icon("search", 15) +
+        '<input class="search-input" placeholder="Search supplier" oninput="onSupplierSearchInput(this.value)" value="' + esc(supplierSearchQuery) + '"/></div>' +
+        '<button class="btn btn-ghost" onclick="downloadPurchasesCSV()" title="Download every purchase as a CSV file for analysis">' + icon("download", 15) + ' Download</button></div>';
+    }
+    html += '<div id="suppliers-body">' + renderSuppliersBody() + '</div>';
+    return html;
+  }
+
+  if (state.invoices.length > 0) {
+    html += '<div class="toolbar" style="margin-bottom:16px"><div class="search-wrap">' + icon("search", 15) +
+      '<input class="search-input" placeholder="Search customer" oninput="onClientSearchInput(this.value)" value="' + esc(clientSearchQuery) + '"/></div>' +
+      '<button class="btn btn-ghost" onclick="downloadSalesCSV()" title="Download every sale as a CSV file for analysis">' + icon("download", 15) + ' Download</button></div>';
+  }
+  html += '<div id="clients-body">' + renderClientsBody() + '</div>';
+  return html;
 }
 
 // Exports one row per invoice (basic info + revenue) so the data can be opened
@@ -2100,6 +2307,18 @@ function renderClients() {
 function csvEscape(v) {
   const s = String(v == null ? "" : v);
   return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function downloadCSVRows(filename, rows) {
+  const csv = rows.map(r => r.map(csvEscape).join(",")).join("\r\n");
+  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 function downloadSalesCSV() {
   const cols = ["Invoice Number", "Date", "Due Date", "Status", "Client Name", "Client Phone",
@@ -2115,19 +2334,23 @@ function downloadSalesCSV() {
       t.amountPaid.toFixed(2), t.due.toFixed(2), t.returnAmt.toFixed(2), inv.issuedBy || "",
     ]);
   });
-  const csv = rows.map(r => r.map(csvEscape).join(",")).join("\r\n");
-  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "sales-" + todayISO() + ".csv";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  downloadCSVRows("sales-" + todayISO() + ".csv", rows);
   showToast("Sales CSV downloaded", "success");
 }
 window.downloadSalesCSV = downloadSalesCSV;
+// Exports one row per expense that has a Vendor / Supplier named — the
+// purchase-side counterpart to Download all sales.
+function downloadPurchasesCSV() {
+  const cols = ["Date", "Vendor / Supplier", "Category", "Description", "Payment Method", "Amount", "Added By"];
+  const rows = [cols];
+  state.expenses.filter(e => (e.vendorName || "").trim()).slice().sort((a, b) => new Date(a.date) - new Date(b.date)).forEach(e => {
+    rows.push([e.date, e.vendorName || "", expenseCategoryLabel(e.category), e.description || "", (e.paymentMethod === "online" ? "Online" : "Cash"), (Number(e.amount) || 0).toFixed(2), e.createdBy || ""]);
+  });
+  downloadCSVRows("purchases-" + todayISO() + ".csv", rows);
+  showToast("Purchases CSV downloaded", "success");
+}
+window.downloadPurchasesCSV = downloadPurchasesCSV;
+window.onSupplierSearchInput = onSupplierSearchInput;
 
 // ---------- Item catalog (photo + description) ----------
 function renderItems() {
@@ -2145,13 +2368,12 @@ function renderItems() {
       '<div style="font-size:12.5px;color:var(--charcoal-soft);min-height:32px;overflow:hidden">' + esc(it.description || "") + '</div>' +
       '<div style="display:flex;justify-content:space-between;align-items:center">' +
       '<span style="font-family:Georgia,serif;font-weight:700">' + fmt(Number(it.rate) || 0) + (it.unit ? ' / ' + esc(it.unit) : '') + '</span>' +
-      '<span style="font-size:11.5px;color:var(--charcoal-soft)">Cost ' + fmt(Number(it.cost) || 0) + '</span>' +
-      '</div>' +
-      '<div style="display:flex;justify-content:flex-end;align-items:center">' +
       '<div style="display:flex;gap:6px">' +
       '<button class="btn-icon" onclick="goto_(\'itemEdit\',\'' + it.id + '\')" title="Edit">' + icon("pencil", 14) + '</button>' +
       '<button class="btn-icon" onclick="deleteCatalogItem(\'' + it.id + '\')" title="Delete">' + icon("trash", 14) + '</button>' +
-      '</div></div></div>';
+      '</div></div>' +
+      '<div style="font-size:11.5px;color:var(--charcoal-soft)">Cost ' + fmt(Number(it.cost) || 0) + ' · Margin ' + catalogMarginText(it) + '</div>' +
+      '</div>';
   });
   html += '</div>';
   return html;
@@ -2163,11 +2385,10 @@ function renderItemForm() {
   html += '<div class="form-card" style="max-width:520px">';
   html += '<label class="field-label">Item name *</label><input class="field-input" value="' + esc(it.name) + '" placeholder="e.g. Orange Pekoe Tea" oninput="updateCatalogDraftField(\'name\',this.value)"/>';
   html += '<div class="form-grid" style="margin-top:14px"><div><label class="field-label">Unit</label><input class="field-input" value="' + esc(it.unit) + '" placeholder="kg, pcs, box…" oninput="updateCatalogDraftField(\'unit\',this.value)"/></div>' +
-    '<div><label class="field-label">Selling rate</label><input type="number" class="field-input" value="' + (it.rate || 0) + '" oninput="updateCatalogDraftField(\'rate\',this.value)"/></div></div>';
-  html += '<div class="form-grid" style="margin-top:14px"><div><label class="field-label">Cost per unit</label><input type="number" class="field-input" value="' + (it.cost || 0) + '" placeholder="Manufacturing / purchase cost" oninput="updateCatalogDraftField(\'cost\',this.value)"/></div>' +
-    '<div><label class="field-label">Margin</label><div class="readonly-field" style="padding:8px 10px;border-radius:7px;border:1px solid var(--line);background:var(--paper-dim);font-size:13.5px">' +
-    (Number(it.rate) > 0 ? (((Number(it.rate) - Number(it.cost || 0)) / Number(it.rate)) * 100).toFixed(1) + '% (' + fmt(Number(it.rate) - Number(it.cost || 0)) + ')' : '—') + '</div></div></div>' +
-    '<p class="settings-intro" style="margin-top:4px">Cost per unit feeds the Financials tab, so line items sold from this catalog entry automatically flow into Cost of Goods Sold.</p>';
+    '<div><label class="field-label">Rate (selling price)</label><input type="number" class="field-input" value="' + (it.rate || 0) + '" oninput="updateCatalogDraftField(\'rate\',this.value); updateCatalogMarginReadout();"/></div></div>';
+  html += '<div class="form-grid" style="margin-top:14px"><div><label class="field-label">Cost (per unit)</label><input type="number" class="field-input" id="in-cost" value="' + (it.cost || 0) + '" placeholder="What this item costs you to buy/produce" oninput="updateCatalogDraftField(\'cost\',this.value); updateCatalogMarginReadout();"/></div>' +
+    '<div><label class="field-label">Margin</label><div class="readonly-field" id="cost-margin-readout">' + catalogMarginText(it) + '</div></div></div>' +
+    '<p class="settings-intro" style="margin-top:8px">Cost is used to work out Cost of Goods Sold and profit margin in the Accounting section — it never appears on invoices.</p>';
   html += '<div class="form-grid" style="margin-top:14px"><div><label class="field-label" lang="ne">Item name (Nepali) — optional</label><input class="field-input" lang="ne" value="' + esc(it.nameNe || "") + '" placeholder="वस्तुको नाम (ऐच्छिक)" oninput="updateCatalogDraftField(\'nameNe\',this.value)"/></div>' +
     '<div><label class="field-label" lang="ne">Unit (Nepali) — optional</label><input class="field-input" lang="ne" value="' + esc(it.unitNe || "") + '" placeholder="कि.ग्रा., थान… (ऐच्छिक)" oninput="updateCatalogDraftField(\'unitNe\',this.value)"/></div></div>' +
     '<p class="settings-intro" style="margin-top:8px">If filled in, these are used instead of the name and unit above when an invoice is printed in Nepali. Numbers (qty, rate, amounts) convert to Nepali digits automatically either way.</p>';
@@ -2183,6 +2404,17 @@ function renderItemForm() {
 }
 function updateCatalogDraftField(field, value) { state.catalogDraft[field] = value; }
 window.updateCatalogDraftField = updateCatalogDraftField;
+function catalogMarginText(it) {
+  const rate = Number(it.rate) || 0, cost = Number(it.cost) || 0;
+  if (rate <= 0) return "—";
+  const marginPct = ((rate - cost) / rate) * 100;
+  return fmt(rate - cost) + " / unit (" + Math.round(marginPct) + "%)";
+}
+function updateCatalogMarginReadout() {
+  const box = document.getElementById("cost-margin-readout");
+  if (box) box.textContent = catalogMarginText(state.catalogDraft);
+}
+window.updateCatalogMarginReadout = updateCatalogMarginReadout;
 function removeCatalogPhoto() { state.catalogDraft.photo = ""; render(); }
 window.removeCatalogPhoto = removeCatalogPhoto;
 function handleCatalogPhoto(input) {
@@ -2233,179 +2465,13 @@ function tapCatalogItem(catalogId) {
     // If the only line so far is the default untouched blank line, replace it instead of
     // leaving an empty row above the new one.
     const blankIdx = state.draft.items.findIndex(l => !l.catalogId && !(l.desc || "").trim() && (Number(l.qty) || 0) <= 1 && !(Number(l.rate) || 0));
-    const newLine = { id: uid(), desc: it.name, descNe: it.nameNe || "", qty: 1, unit: it.unit || "", unitNe: it.unitNe || "", rate: Number(it.rate) || 0, catalogId: it.id };
+    const newLine = { id: uid(), desc: it.name, descNe: it.nameNe || "", qty: 1, unit: it.unit || "", unitNe: it.unitNe || "", rate: Number(it.rate) || 0, cost: Number(it.cost) || 0, catalogId: it.id };
     if (blankIdx !== -1) state.draft.items[blankIdx] = newLine;
     else state.draft.items.push(newLine);
   }
   render();
 }
 window.tapCatalogItem = tapCatalogItem;
-
-// ---------- Expenses (whole-company cost record) ----------
-function renderExpenses() {
-  let html = '<div class="toolbar"><div></div><button class="btn btn-primary" onclick="goto_(\'expenseNew\')">' + icon("plusCircle", 15) + ' Add expense</button></div>';
-  if (state.expenses.length === 0) {
-    html += emptyState("No expenses recorded yet", "Log raw materials, manufacturing labor, overhead, and every other cost from production through to sale — Financials pulls straight from here.", "Add your first expense", "goto_('expenseNew')");
-    return html;
-  }
-  const total = state.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
-  const unpaid = state.expenses.filter(e => !e.paid).reduce((s, e) => s + (Number(e.amount) || 0), 0);
-  html += '<div class="stat-row" style="margin-bottom:18px">' +
-    '<div class="stat-card"><div class="stat-label">Total recorded</div><div class="stat-value">' + fmt(total) + '</div></div>' +
-    '<div class="stat-card"><div class="stat-label">Unpaid / payable</div><div class="stat-value">' + fmt(unpaid) + '</div></div>' +
-    '<div class="stat-card"><div class="stat-label">Entries</div><div class="stat-value">' + state.expenses.length + '</div></div>' +
-    '</div>';
-  html += '<div class="table-wrap"><div class="t-head" style="grid-template-columns:100px 1fr 1.2fr 1fr 110px 90px 90px">' +
-    '<div>Date</div><div>Category</div><div>Description</div><div>Seller / Due to</div><div>Amount</div><div>Status</div><div></div></div>';
-  state.expenses.forEach(e => {
-    const sellerDue = [e.sellerName, (!e.paid && e.dueTo) ? ("Due: " + e.dueTo) : ""].filter(Boolean).join(" · ");
-    html += '<div class="t-row" style="grid-template-columns:100px 1fr 1.2fr 1fr 110px 90px 90px">' +
-      '<div class="t-date">' + esc(e.date) + '</div>' +
-      '<div>' + esc(expenseCategoryLabel(e.category)) + '</div>' +
-      '<div class="t-client">' + esc(e.description || "—") + '</div>' +
-      '<div>' + esc(sellerDue || "—") + '</div>' +
-      '<div class="t-amt">' + fmt(e.amount) + '</div>' +
-      '<div><span class="pill ' + (e.paid ? "paid" : "unpaid") + '"><span class="dot ' + (e.paid ? "paid" : "unpaid") + '"></span>' + (e.paid ? "Paid" : "Unpaid") + '</span></div>' +
-      '<div class="t-actions"><button class="btn-icon" onclick="goto_(\'expenseEdit\',\'' + e.id + '\')" title="Edit">' + icon("pencil", 14) + '</button>' +
-      '<button class="btn-icon" onclick="deleteExpense(\'' + e.id + '\')" title="Delete">' + icon("trash", 14) + '</button></div></div>';
-  });
-  html += '</div>';
-  return html;
-}
-
-function renderExpenseForm() {
-  const e = state.expenseDraft;
-  let html = '<button class="btn btn-ghost" style="margin-bottom:16px" onclick="goto_(\'expenses\')">' + icon("arrowLeft", 15) + ' Back</button>';
-  html += '<div class="form-card" style="max-width:520px">';
-  html += '<div class="form-grid"><div><label class="field-label">Date</label><input type="date" class="field-input" value="' + esc(e.date) + '" oninput="updateExpenseDraftField(\'date\',this.value)"/></div>' +
-    '<div><label class="field-label">Category</label><select class="field-select" onchange="updateExpenseDraftField(\'category\',this.value)">' +
-    EXPENSE_CATEGORIES.map(([k, label]) => '<option value="' + k + '"' + (e.category === k ? " selected" : "") + '>' + esc(label) + '</option>').join("") + '</select></div></div>';
-  html += '<label class="field-label" style="margin-top:14px;display:block">Description</label><input class="field-input" value="' + esc(e.description) + '" placeholder="e.g. Green leaf purchase — Aug batch" oninput="updateExpenseDraftField(\'description\',this.value)"/>';
-  html += '<label class="field-label" style="margin-top:14px;display:block">Seller / Vendor name</label><input class="field-input" value="' + esc(e.sellerName || "") + '" placeholder="e.g. Himal Traders" oninput="updateExpenseDraftField(\'sellerName\',this.value)"/>';
-  html += '<div class="form-grid" style="margin-top:14px"><div><label class="field-label">Amount</label><input type="number" class="field-input" value="' + (e.amount || 0) + '" oninput="updateExpenseDraftField(\'amount\',this.value)"/></div>' +
-    '<div><label class="field-label">Status</label><div class="vat-toggle">' +
-    '<button type="button" class="vat-btn ' + (e.paid ? "active" : "") + '" onclick="updateExpenseDraftField(\'paid\',true); render();">Paid</button>' +
-    '<button type="button" class="vat-btn ' + (!e.paid ? "active" : "") + '" onclick="updateExpenseDraftField(\'paid\',false); render();">Unpaid</button>' +
-    '</div></div></div>';
-  if (!e.paid) {
-    html += '<label class="field-label" style="margin-top:14px;display:block">Due to</label><input class="field-input" value="' + esc(e.dueTo || "") + '" placeholder="Who this payment is owed to (defaults to seller)" oninput="updateExpenseDraftField(\'dueTo\',this.value)"/>';
-  }
-  html += '<p class="settings-intro" style="margin-top:10px">Unpaid expenses show up as Accounts Payable on the Balance Sheet until marked paid.</p>';
-  html += '<div class="form-footer"><button class="btn btn-ghost" onclick="goto_(\'expenses\')">Cancel</button>' +
-    '<button class="btn btn-primary" onclick="saveExpenseDraft()">' + icon("check", 15) + ' Save expense</button></div>';
-  html += '</div>';
-  return html;
-}
-function updateExpenseDraftField(field, value) { state.expenseDraft[field] = value; }
-window.updateExpenseDraftField = updateExpenseDraftField;
-async function saveExpenseDraft() {
-  const e = state.expenseDraft;
-  if (!e.date) { showToast("Date is required", "error"); return; }
-  if (!(Number(e.amount) > 0)) { showToast("Enter an amount greater than 0", "error"); return; }
-  if (!e.paid && !e.dueTo && e.sellerName) { e.dueTo = e.sellerName; }
-  try {
-    await saveExpenseToDb(e);
-    const idx = state.expenses.findIndex(x => x.id === e.id);
-    if (idx === -1) state.expenses.push(e); else state.expenses[idx] = e;
-    state.expenses.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
-    goto_("expenses");
-  } catch (err) {
-    console.error(err);
-    showToast("Couldn't save the expense — try again", "error");
-  }
-}
-window.saveExpenseDraft = saveExpenseDraft;
-async function deleteExpense(id) {
-  try {
-    await deleteExpenseFromDb(id);
-    state.expenses = state.expenses.filter(e => e.id !== id);
-    render();
-  } catch (e) {
-    console.error(e);
-    showToast("Couldn't delete the expense — try again", "error");
-  }
-}
-window.deleteExpense = deleteExpense;
-
-// ---------- Sellers / Vendors (every purchase a given seller has ever
-// supplied, drawn from Expenses, newest first) ----------
-let sellerSearchQuery = "";
-function onSellerSearchInput(v) { sellerSearchQuery = v; renderSellersBodyOnly(); }
-window.onSellerSearchInput = onSellerSearchInput;
-
-function renderSellersBody() {
-  const bySeller = {};
-  state.expenses.forEach(e => {
-    const key = e.sellerName || "Unnamed seller";
-    if (!bySeller[key]) bySeller[key] = { total: 0, count: 0, unpaid: 0 };
-    const amt = Number(e.amount) || 0;
-    bySeller[key].total += amt; bySeller[key].count += 1;
-    if (!e.paid) bySeller[key].unpaid += amt;
-  });
-  let rows = Object.entries(bySeller).map(([name, v]) => Object.assign({ name }, v)).sort((a, b) => b.total - a.total);
-  if (rows.length === 0) return emptyState("No sellers yet", "Sellers appear here automatically once you record an expense with a seller name.", "Add your first expense", "goto_('expenseNew')");
-  const q = sellerSearchQuery.trim().toLowerCase();
-  if (q) rows = rows.filter(s => s.name.toLowerCase().includes(q));
-  if (rows.length === 0) return emptyState("No matches", "Try a different search term.", null, "");
-  let html = "";
-  rows.forEach(s => {
-    html += '<div class="client-card" style="cursor:pointer" onclick="goto_(\'sellerDetail\',\'' + jsStr(s.name) + '\')"><div><div class="client-card-name">' + esc(s.name) + '</div>' +
-      '<div class="client-card-meta">' + s.count + ' purchase' + (s.count === 1 ? "" : "s") + '</div></div>' +
-      '<div class="client-figs"><div style="text-align:right"><div class="fig-label">Total spent</div><div class="fig-value">' + fmt(s.total) + '</div></div>';
-    if (s.unpaid > 0) html += '<div style="text-align:right"><div class="fig-label">Due to them</div><div class="fig-value" style="color:var(--amber)">' + fmt(s.unpaid) + '</div></div>';
-    html += '</div></div>';
-  });
-  return html;
-}
-function renderSellersBodyOnly() {
-  const el = document.getElementById("sellers-body");
-  if (el) el.innerHTML = renderSellersBody();
-}
-function renderSellers() {
-  if (state.expenses.length === 0) return renderSellersBody();
-  return '<div class="toolbar"><div class="search-wrap">' + icon("search", 15) +
-    '<input class="search-input" placeholder="Search seller" oninput="onSellerSearchInput(this.value)" value="' + esc(sellerSearchQuery) + '"/></div></div>' +
-    '<div id="sellers-body">' + renderSellersBody() + '</div>';
-}
-
-function renderSellerDetail() {
-  const name = state.activeSellerName || "";
-  const key = normName(name);
-  const backBtn = '<button class="btn btn-ghost" style="margin-bottom:16px" onclick="goto_(\'sellers\')">' + icon("arrowLeft", 15) + ' Back to sellers</button>';
-  const purchases = state.expenses.filter(e => normName(e.sellerName || "Unnamed seller") === key).sort((a, b) => new Date(b.date) - new Date(a.date));
-  if (purchases.length === 0) {
-    return backBtn + emptyState("No purchases found", "This seller has no expenses on record.", null, "");
-  }
-  const totalSpent = purchases.reduce((s, e) => s + (Number(e.amount) || 0), 0);
-  const totalDue = purchases.filter(e => !e.paid).reduce((s, e) => s + (Number(e.amount) || 0), 0);
-
-  let html = backBtn;
-  html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px">' +
-    '<div><div class="topbar-eyebrow">Seller</div><div style="font-family:Georgia,serif;font-weight:700;font-size:20px;color:var(--charcoal)">' + esc(name) + '</div></div></div>';
-
-  html += '<div class="stat-row" style="margin-bottom:20px">' +
-    '<div class="stat-card"><div class="stat-label">Purchases</div><div class="stat-value">' + purchases.length + '</div></div>' +
-    '<div class="stat-card"><div class="stat-label">Total spent</div><div class="stat-value">' + fmt(totalSpent) + '</div></div>' +
-    '<div class="stat-card"><div class="stat-label">Due to them</div><div class="stat-value" style="' + (totalDue > 0 ? "color:var(--amber)" : "") + '">' + fmt(totalDue) + '</div></div>' +
-    '</div>';
-
-  html += '<div class="section-title" style="margin-bottom:10px">Purchase history</div>';
-  html += '<div class="table-wrap"><div class="t-head" style="grid-template-columns:100px 1fr 1.4fr 1fr 110px 90px">' +
-    '<div>Date</div><div>Category</div><div>Item / description</div><div>Due to</div><div>Amount</div><div>Status</div></div>';
-  purchases.forEach(e => {
-    html += '<div class="t-row" style="grid-template-columns:100px 1fr 1.4fr 1fr 110px 90px;cursor:pointer" onclick="goto_(\'expenseEdit\',\'' + e.id + '\')">' +
-      '<div class="t-date">' + esc(e.date) + '</div>' +
-      '<div>' + esc(expenseCategoryLabel(e.category)) + '</div>' +
-      '<div class="t-client">' + esc(e.description || "—") + '</div>' +
-      '<div>' + esc((!e.paid && e.dueTo) ? e.dueTo : "—") + '</div>' +
-      '<div class="t-amt">' + fmt(e.amount) + '</div>' +
-      '<div><span class="pill ' + (e.paid ? "paid" : "unpaid") + '"><span class="dot ' + (e.paid ? "paid" : "unpaid") + '"></span>' + (e.paid ? "Paid" : "Unpaid") + '</span></div>' +
-      '</div>';
-  });
-  html += '</div>';
-  return html;
-}
-
 
 // ---------- Sales review (aggregated item-level sales across invoices) ----------
 function setSalesFrom(v) { state.salesFrom = v; render(); }
@@ -2464,10 +2530,10 @@ function renderSales() {
   });
   html += '</div></div>';
 
-  html += '<div class="table-wrap"><div class="t-head" style="grid-template-columns:2fr 1fr 1fr 1fr">' +
+  html += '<div class="table-wrap"><div class="t-head cols-sales">' +
     '<div>Item</div><div>Qty sold</div><div>Line items</div><div>Revenue</div></div>';
   rows.forEach(r => {
-    html += '<div class="t-row" style="grid-template-columns:2fr 1fr 1fr 1fr">' +
+    html += '<div class="t-row cols-sales">' +
       '<div class="t-client">' + esc(r.name) + '</div>' +
       '<div>' + r.qty + '</div>' +
       '<div>' + r.invoiceCount + '</div>' +
@@ -2477,188 +2543,676 @@ function renderSales() {
   return html + filterHtml;
 }
 
-// ---------- Financial statements ----------
-// Cost of goods sold is derived from each sold line item's linked catalog entry
-// (falling back to a name match for older/hand-typed lines) times its "Cost per
-// unit". Everything else recorded in the Expenses tab is treated as a period
-// operating expense (manufacturing labor, overhead, admin, marketing, etc).
-function catalogCostForItem(it) {
+// ================= Accounting: cost tracking + auto-generated statements =================
+// Data model: state.opening is a one-time snapshot "as of" a chosen date.
+// Everything dated AFTER that date — invoices, expenses, and the capital/
+// loan/asset entries below — is added on top when computing a balance as of
+// any later date, or a P&L / cash flow for any date range. Movements dated
+// on/before the opening date are assumed already folded into it.
+
+function newBlankExpense() { return { id: uid(), date: todayISO(), category: "other", description: "", qty: 1, rate: 0, amount: 0, paymentMethod: "cash", vendorName: "" }; }
+function newBlankAcctTxn() { return { id: uid(), date: todayISO(), type: "capital_in", amount: 0, paymentMethod: "cash", poolCategory: "poolD", description: "" }; }
+
+function updateExpenseDraftField(field, value) { state.expenseDraft[field] = value; }
+window.updateExpenseDraftField = updateExpenseDraftField;
+// Quantity and Rate are a convenience for line-item-style expenses (e.g. "50
+// kg raw tea @ Rs 120") — touching either recalculates Amount automatically.
+// Amount stays a normal editable field for lump-sum expenses (rent, wages)
+// where quantity/rate don't apply; it's only overwritten when qty/rate change.
+function updateExpenseQtyRate(field, value) {
+  state.expenseDraft[field] = value;
+  const qty = Number(state.expenseDraft.qty) || 0;
+  const rate = Number(state.expenseDraft.rate) || 0;
+  if (qty > 0 && rate > 0) {
+    state.expenseDraft.amount = Math.round(qty * rate * 100) / 100;
+    const amtInput = document.getElementById("exp-amount");
+    if (amtInput) amtInput.value = state.expenseDraft.amount;
+  }
+}
+window.updateExpenseQtyRate = updateExpenseQtyRate;
+function setExpenseDraftCategory(cat) { state.expenseDraft.category = cat; render(); }
+window.setExpenseDraftCategory = setExpenseDraftCategory;
+function setExpenseDraftPaymentMethod(pm) { state.expenseDraft.paymentMethod = pm; render(); }
+window.setExpenseDraftPaymentMethod = setExpenseDraftPaymentMethod;
+async function addExpense() {
+  const e = state.expenseDraft;
+  if (!e.date) { showToast("Pick a date", "error"); return; }
+  if (!(Number(e.amount) > 0)) { showToast("Enter an amount greater than zero", "error"); return; }
+  if (!(e.vendorName || "").trim()) { showToast("Enter a Vendor / Supplier", "error"); return; }
+  try {
+    await saveExpenseToDb(e);
+    state.expenses.unshift(dbExpenseToApp(appExpenseToDbRow(e)));
+    state.expenses.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+    state.expenseDraft = newBlankExpense();
+    render();
+    showToast("Expense recorded", "success");
+  } catch (err) { console.error(err); showToast("Couldn't save the expense — try again", "error"); }
+}
+window.addExpense = addExpense;
+async function deleteExpense(id) {
+  if (!confirm("Delete this expense? This can't be undone.")) return;
+  try {
+    await deleteExpenseFromDb(id);
+    state.expenses = state.expenses.filter(e => e.id !== id);
+    render();
+  } catch (err) { console.error(err); showToast("Couldn't delete the expense — try again", "error"); }
+}
+window.deleteExpense = deleteExpense;
+
+function updateAcctTxnDraftField(field, value) { state.acctTxnDraft[field] = value; }
+window.updateAcctTxnDraftField = updateAcctTxnDraftField;
+function setAcctTxnDraftType(type) { state.acctTxnDraft.type = type; render(); }
+window.setAcctTxnDraftType = setAcctTxnDraftType;
+function setAcctTxnDraftPool(pool) { state.acctTxnDraft.poolCategory = pool; render(); }
+window.setAcctTxnDraftPool = setAcctTxnDraftPool;
+function setAcctTxnDraftPaymentMethod(pm) { state.acctTxnDraft.paymentMethod = pm; render(); }
+window.setAcctTxnDraftPaymentMethod = setAcctTxnDraftPaymentMethod;
+async function addAcctTxn() {
+  const t = state.acctTxnDraft;
+  if (!t.date) { showToast("Pick a date", "error"); return; }
+  if (!(Number(t.amount) > 0)) { showToast("Enter an amount greater than zero", "error"); return; }
+  try {
+    await saveAcctTxnToDb(t);
+    state.acctTxns.unshift(dbAcctTxnToApp(appAcctTxnToDbRow(t)));
+    state.acctTxns.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+    state.acctTxnDraft = newBlankAcctTxn();
+    render();
+    showToast("Recorded", "success");
+  } catch (err) { console.error(err); showToast("Couldn't save — try again", "error"); }
+}
+window.addAcctTxn = addAcctTxn;
+async function deleteAcctTxn(id) {
+  if (!confirm("Delete this entry? This can't be undone.")) return;
+  try {
+    await deleteAcctTxnFromDb(id);
+    state.acctTxns = state.acctTxns.filter(t => t.id !== id);
+    render();
+  } catch (err) { console.error(err); showToast("Couldn't delete — try again", "error"); }
+}
+window.deleteAcctTxn = deleteAcctTxn;
+
+function updateOpeningDraftField(field, value) { state.openingDraft[field] = value; updateOpeningBalanceCheck(); }
+window.updateOpeningDraftField = updateOpeningDraftField;
+function updateOpeningBalanceCheck() {
+  const box = document.getElementById("opening-balance-check");
+  if (!box) return;
+  const d = state.openingDraft;
+  const poolTotal = ALL_ASSET_POOLS.reduce((s, [key]) => s + (Number(d[key]) || 0), 0);
+  const assets = (Number(d.cash) || 0) + (Number(d.bank) || 0) + poolTotal + (Number(d.openingInventory) || 0);
+  const claims = (Number(d.loansPayable) || 0) + (Number(d.ownersCapital) || 0);
+  const diff = Math.round((assets - claims) * 100) / 100;
+  box.innerHTML = diff === 0
+    ? '<span style="color:var(--green)">' + icon("check", 14) + ' Balanced — Assets ' + fmt(assets) + ' = Liabilities + Capital ' + fmt(claims) + '</span>'
+    : '<span style="color:var(--rust-deep)">' + icon("alertTriangle", 14) + ' Out of balance by ' + fmt(Math.abs(diff)) + ' — Assets ' + fmt(assets) + ' vs Liabilities + Capital ' + fmt(claims) + '. Adjust Owner\'s capital to plug the gap.</span>';
+}
+window.updateOpeningBalanceCheck = updateOpeningBalanceCheck;
+async function saveOpeningForm() {
+  const d = state.openingDraft;
+  try {
+    await saveOpeningToDb(d);
+    state.opening = Object.assign({}, d);
+    render();
+    showToast("Opening balances saved", "success");
+  } catch (err) { console.error(err); showToast("Couldn't save — try again", "error"); }
+}
+window.saveOpeningForm = saveOpeningForm;
+
+// ---- Period controls shared by the three statements ----
+function setAcctTab(tab) {
+  state.acctTab = tab;
+  if (tab === "opening" && !state.openingDraft) state.openingDraft = Object.assign({}, state.opening);
+  render();
+}
+window.setAcctTab = setAcctTab;
+function setAcctFrom(v) { state.acctFrom = v; render(); }
+function setAcctTo(v) { state.acctTo = v; render(); }
+window.setAcctFrom = setAcctFrom; window.setAcctTo = setAcctTo;
+function shiftAcctQuarter(dir) {
+  const mid = new Date((new Date(state.acctFrom || todayISO()).getTime() + new Date(state.acctTo || todayISO()).getTime()) / 2);
+  mid.setUTCDate(mid.getUTCDate() + dir * 95);
+  const q = fiscalQuarterBounds(mid);
+  state.acctFrom = q.from; state.acctTo = q.to; render();
+}
+window.shiftAcctQuarter = shiftAcctQuarter;
+function setBalanceAsOf(v) { state.balanceAsOf = v; render(); }
+window.setBalanceAsOf = setBalanceAsOf;
+
+// ---- Core computations ----
+function acctCashBankAsOf(asOfIso) {
+  const upTo = asOfIso ? new Date(asOfIso) : null;
+  const openingDate = state.opening.asOfDate ? new Date(state.opening.asOfDate) : null;
+  let cash = Number(state.opening.cash) || 0, bank = Number(state.opening.bank) || 0;
+  state.invoices.forEach(inv => {
+    const d = new Date(inv.date);
+    if (openingDate && d <= openingDate) return;
+    if (upTo && d > upTo) return;
+    const paid = Number(inv.amountPaid) || 0;
+    if (paid <= 0) return;
+    if ((inv.paymentMethod || "cash") === "online") bank += paid; else cash += paid;
+  });
+  state.expenses.forEach(e => {
+    const d = new Date(e.date);
+    if (openingDate && d <= openingDate) return;
+    if (upTo && d > upTo) return;
+    const amt = Number(e.amount) || 0;
+    if ((e.paymentMethod || "cash") === "online") bank -= amt; else cash -= amt;
+  });
+  state.acctTxns.forEach(t => {
+    const d = new Date(t.date);
+    if (openingDate && d <= openingDate) return;
+    if (upTo && d > upTo) return;
+    const amt = (Number(t.amount) || 0) * acctTxnCashSign(t.type);
+    if ((t.paymentMethod || "cash") === "online") bank += amt; else cash += amt;
+  });
+  return { cash, bank };
+}
+// Gross book value of fixed assets as of a date, on a Nepal Income Tax Act
+// (Schedule 2) pool basis. Pass a poolKey to get just that pool's balance,
+// or omit it for the total across all pools (A-D and E). Any asset
+// transaction saved without a pool (older entries) is treated as Pool D,
+// the Act's catch-all.
+function acctFixedAssetsAsOf(asOfIso, poolKey) {
+  const upTo = asOfIso ? new Date(asOfIso) : null;
+  const openingDate = state.opening.asOfDate ? new Date(state.opening.asOfDate) : null;
+  const pools = poolKey ? [poolKey] : ALL_ASSET_POOLS.map(p => p[0]);
+  let total = 0;
+  pools.forEach(pk => {
+    let bal = Number(state.opening[pk]) || 0;
+    state.acctTxns.forEach(t => {
+      if (t.type !== "asset_purchase" && t.type !== "asset_disposal") return;
+      if ((t.poolCategory || "poolD") !== pk) return;
+      const d = new Date(t.date);
+      if (openingDate && d <= openingDate) return;
+      if (upTo && d > upTo) return;
+      if (t.type === "asset_purchase") bal += Number(t.amount) || 0;
+      else bal -= Number(t.amount) || 0;
+    });
+    total += bal;
+  });
+  return total;
+}
+// Per-pool gross / depreciation(or amortization)-for-span / net breakdown.
+// Pools A-D: reducing-balance (WDV) — gross book value × the pool's rate ×
+// (days in span / 365). Pool E (intangibles): straight-line over its
+// useful-life setting instead, per the Act's treatment of intangible
+// assets with an ascertainable life — gross × (1 / useful life years) ×
+// (days in span / 365). A simplified aggregate approach either way (not a
+// per-asset register, and not the Act's own within-year proration rules),
+// so treat this as an estimate to check against your tax advisor's
+// figures, not a return-ready computation.
+function acctFixedAssetsByPool(fromIso, toIso) {
+  const from = fromIso ? new Date(fromIso) : (state.opening.asOfDate ? new Date(addDaysISO(state.opening.asOfDate, 1)) : null);
+  const to = toIso ? new Date(toIso) : null;
+  const days = (!from || !to || to < from) ? 0 : Math.floor((to.getTime() - from.getTime()) / 86400000) + 1;
+  const rows = ASSET_POOLS.map(([key, label, rate]) => {
+    const gross = acctFixedAssetsAsOf(toIso, key);
+    const dep = gross * (rate / 100) * (days / 365);
+    return { key, label, method: "WDV", rate, life: null, gross, dep, net: gross - dep };
+  });
+  const life = Number(state.opening.poolEUsefulLifeYears) || 5;
+  const grossE = acctFixedAssetsAsOf(toIso, "poolE");
+  const depE = life > 0 ? grossE * (1 / life) * (days / 365) : 0;
+  rows.push({ key: "poolE", label: POOL_E[1], method: "SL", rate: null, life, gross: grossE, dep: depE, net: grossE - depE });
+  return rows;
+}
+// Sum of the per-pool figures above for [fromIso, toIso] — used both for
+// the accumulated figure netted against Fixed Assets on the Balance Sheet
+// (called with [openingDate+1, asOf]), and, via acctIncomeStatement, for
+// retained earnings over the same span, so the two always agree.
+function acctDepreciationForPeriod(fromIso, toIso) {
+  if (!toIso) return 0;
+  return acctFixedAssetsByPool(fromIso, toIso).reduce((s, p) => s + p.dep, 0);
+}
+function acctAccumulatedDepreciation(asOfIso) {
+  return acctDepreciationForPeriod(addDaysISO(state.opening.asOfDate, 1), asOfIso);
+}
+function acctLoansAsOf(asOfIso) {
+  const upTo = asOfIso ? new Date(asOfIso) : null;
+  const openingDate = state.opening.asOfDate ? new Date(state.opening.asOfDate) : null;
+  let loans = Number(state.opening.loansPayable) || 0;
+  state.acctTxns.forEach(t => {
+    const d = new Date(t.date);
+    if (openingDate && d <= openingDate) return;
+    if (upTo && d > upTo) return;
+    if (t.type === "loan_in") loans += Number(t.amount) || 0;
+    else if (t.type === "loan_repay") loans -= Number(t.amount) || 0;
+  });
+  return loans;
+}
+function acctCapitalAsOf(asOfIso) {
+  const upTo = asOfIso ? new Date(asOfIso) : null;
+  const openingDate = state.opening.asOfDate ? new Date(state.opening.asOfDate) : null;
+  let cap = Number(state.opening.ownersCapital) || 0;
+  state.acctTxns.forEach(t => {
+    const d = new Date(t.date);
+    if (openingDate && d <= openingDate) return;
+    if (upTo && d > upTo) return;
+    if (t.type === "capital_in") cap += Number(t.amount) || 0;
+    else if (t.type === "drawing") cap -= Number(t.amount) || 0;
+  });
+  return cap;
+}
+function acctReceivablesAsOf(asOfIso) {
+  const upTo = asOfIso ? new Date(asOfIso) : null;
+  let ar = 0;
+  state.invoices.forEach(inv => {
+    const d = new Date(inv.date);
+    if (upTo && d > upTo) return;
+    ar += invoiceTotals(inv).due;
+  });
+  return ar;
+}
+// Cost of Goods Sold for one invoice line: the cost entered on the invoice
+// itself takes precedence (so today's actual purchase cost can be billed),
+// falling back to the catalog item's Cost for older lines saved before this
+// per-line field existed.
+function invoiceLineCost(it) {
+  const own = Number(it.cost) || 0;
+  if (own > 0) return own;
   if (it.catalogId) {
-    const c = state.catalogItems.find(c => c.id === it.catalogId);
-    if (c) return Number(c.cost) || 0;
+    const ci = state.catalogItems.find(c => c.id === it.catalogId);
+    if (ci) return Number(ci.cost) || 0;
   }
-  const key = (it.desc || "").trim().toLowerCase();
-  if (key) {
-    const c = state.catalogItems.find(c => (c.name || "").trim().toLowerCase() === key);
-    if (c) return Number(c.cost) || 0;
-  }
-  return null;
+  return 0;
 }
-function invoiceCOGS(inv) {
-  let cogs = 0, unknownCount = 0;
-  (inv.items || []).forEach(it => {
-    const qty = Number(it.qty) || 0;
-    if (!qty) return;
-    const unitCost = catalogCostForItem(it);
-    if (unitCost === null) { unknownCount++; return; }
-    cogs += unitCost * qty;
+function acctIncomeStatement(fromIso, toIso) {
+  const from = fromIso ? new Date(fromIso) : null;
+  const to = toIso ? new Date(toIso) : null;
+  const inRange = d => (!from || d >= from) && (!to || d <= to);
+  let revenue = 0, cogs = 0, uncostedQty = 0;
+  const invoicesInRange = state.invoices.filter(inv => inRange(new Date(inv.date)));
+  invoicesInRange.forEach(inv => {
+    revenue += invoiceTotals(inv).total;
+    inv.items.forEach(it => {
+      const qty = Number(it.qty) || 0;
+      const unitCost = invoiceLineCost(it);
+      if (unitCost > 0) cogs += qty * unitCost;
+      else uncostedQty += qty;
+    });
   });
-  return { cogs, unknownCount };
-}
-function inDateRange(dateStr, from, to) {
-  const d = new Date(dateStr);
-  if (from && d < new Date(from)) return false;
-  if (to && d > new Date(to)) return false;
-  return true;
-}
-function computeIncomeStatement(from, to) {
-  const invs = state.invoices.filter(inv => inDateRange(inv.date, from, to));
-  let salesRevenue = 0, shippingRevenue = 0, cogs = 0, unknownCostLines = 0;
-  invs.forEach(inv => {
-    const t = invoiceTotals(inv);
-    salesRevenue += t.subtotal; shippingRevenue += t.shipping;
-    const c = invoiceCOGS(inv);
-    cogs += c.cogs; unknownCostLines += c.unknownCount;
+  const grossProfit = revenue - cogs;
+  const expByCat = {}; EXPENSE_CATEGORIES.forEach(([k]) => { expByCat[k] = 0; });
+  let totalExpenses = 0;
+  state.expenses.filter(e => inRange(new Date(e.date))).forEach(e => {
+    if (e.category === "raw_materials") return; // capitalized to Inventory, not expensed directly — see acctInventoryAsOf
+    const cat = expByCat.hasOwnProperty(e.category) ? e.category : "other";
+    expByCat[cat] += Number(e.amount) || 0;
+    totalExpenses += Number(e.amount) || 0;
   });
-  const totalRevenue = salesRevenue + shippingRevenue;
-  const grossProfit = totalRevenue - cogs;
-  const exps = state.expenses.filter(e => inDateRange(e.date, from, to));
-  const byCat = {};
-  let totalOpEx = 0;
-  exps.forEach(e => { const k = e.category || "other"; byCat[k] = (byCat[k] || 0) + (Number(e.amount) || 0); totalOpEx += Number(e.amount) || 0; });
-  return {
-    invoiceCount: invs.length, salesRevenue, shippingRevenue, totalRevenue,
-    cogs, unknownCostLines, grossProfit, byCat, totalOpEx, netIncome: grossProfit - totalOpEx,
-  };
+  const depreciation = toIso ? acctDepreciationForPeriod(fromIso, toIso) : 0;
+  const netProfit = grossProfit - totalExpenses - depreciation;
+  return { revenue, cogs, grossProfit, expByCat, totalExpenses, depreciation, netProfit, invoiceCount: invoicesInRange.length, uncostedQty };
 }
-// Cost of goods sold is modeled as a cash cost incurred at the time of sale (this
-// app doesn't track a separate raw-material inventory or its own payables), which
-// is what keeps Assets == Liabilities + Equity below without full double-entry books.
-function computeBalanceSheet(asOf) {
-  const stmt = computeIncomeStatement(null, asOf);
-  const invsUpTo = state.invoices.filter(inv => inDateRange(inv.date, null, asOf));
-  const cashCollected = invsUpTo.reduce((s, inv) => s + (Number(inv.amountPaid) || 0), 0);
-  const accountsReceivable = invsUpTo.reduce((s, inv) => s + invoiceTotals(inv).due, 0);
-  const expensesUpTo = state.expenses.filter(e => inDateRange(e.date, null, asOf));
-  const cashExpensesPaid = expensesUpTo.filter(e => e.paid).reduce((s, e) => s + (Number(e.amount) || 0), 0);
-  const accountsPayable = expensesUpTo.filter(e => !e.paid).reduce((s, e) => s + (Number(e.amount) || 0), 0);
-  const ownersCapital = Number(state.company.openingCash) || 0;
-  const cash = ownersCapital + cashCollected - cashExpensesPaid - stmt.cogs;
-  const totalAssets = cash + accountsReceivable;
-  const totalLiabilities = accountsPayable;
-  const retainedEarnings = stmt.netIncome;
-  const totalEquity = ownersCapital + retainedEarnings;
-  return { asOf: asOf || todayISO(), cash, accountsReceivable, totalAssets, accountsPayable, totalLiabilities, ownersCapital, retainedEarnings, totalEquity };
+// Inventory (raw materials / stock on hand) as of a date: opening inventory
+// plus raw-material purchases logged since, less the cost of goods actually
+// sold since (the same catalog-Cost-based figure used as COGS above) — this
+// is what keeps the Balance Sheet in balance when COGS is deducted on the
+// Income Statement. A negative result means COGS has been recognised
+// without a matching purchase logged — a prompt to record that purchase.
+function acctInventoryAsOf(asOfIso) {
+  const upTo = asOfIso ? new Date(asOfIso) : null;
+  const openingDate = state.opening.asOfDate ? new Date(state.opening.asOfDate) : null;
+  let inv = Number(state.opening.openingInventory) || 0;
+  state.expenses.forEach(e => {
+    if (e.category !== "raw_materials") return;
+    const d = new Date(e.date);
+    if (openingDate && d <= openingDate) return;
+    if (upTo && d > upTo) return;
+    inv += Number(e.amount) || 0;
+  });
+  const cogsSinceOpening = acctIncomeStatement(openingDate ? addDaysISO(state.opening.asOfDate, 1) : null, asOfIso).cogs;
+  inv -= cogsSinceOpening;
+  return inv;
 }
-function computeCashFlow(from, to) {
-  const invs = state.invoices.filter(inv => inDateRange(inv.date, from, to));
-  const cashCollected = invs.reduce((s, inv) => s + (Number(inv.amountPaid) || 0), 0);
-  const cogsForPeriod = invs.reduce((s, inv) => s + invoiceCOGS(inv).cogs, 0);
-  const exps = state.expenses.filter(e => inDateRange(e.date, from, to));
-  const cashExpensesPaid = exps.filter(e => e.paid).reduce((s, e) => s + (Number(e.amount) || 0), 0);
-  const netCashFromOps = cashCollected - cogsForPeriod - cashExpensesPaid;
-  let beginningCash;
-  if (from) {
-    const dayBefore = new Date(from); dayBefore.setDate(dayBefore.getDate() - 1);
-    beginningCash = computeBalanceSheet(dayBefore.toISOString().slice(0, 10)).cash;
-  } else {
-    beginningCash = Number(state.company.openingCash) || 0;
-  }
-  return { cashCollected, cogsForPeriod, cashExpensesPaid, netCashFromOps, beginningCash, endingCash: beginningCash + netCashFromOps };
+function acctCashFlow(fromIso, toIso) {
+  const from = fromIso ? new Date(fromIso) : null;
+  const to = toIso ? new Date(toIso) : null;
+  const inRange = d => (!from || d >= from) && (!to || d <= to);
+  let cashFromCustomers = 0, cashForExpenses = 0;
+  state.invoices.filter(inv => inRange(new Date(inv.date))).forEach(inv => { cashFromCustomers += Number(inv.amountPaid) || 0; });
+  state.expenses.filter(e => inRange(new Date(e.date))).forEach(e => { cashForExpenses += Number(e.amount) || 0; });
+  const operating = cashFromCustomers - cashForExpenses;
+  let investing = 0, financing = 0;
+  const lines = { assetPurchase: 0, assetDisposal: 0, capitalIn: 0, drawing: 0, loanIn: 0, loanRepay: 0 };
+  state.acctTxns.filter(t => inRange(new Date(t.date))).forEach(t => {
+    const amt = Number(t.amount) || 0;
+    if (t.type === "asset_purchase") { investing -= amt; lines.assetPurchase += amt; }
+    else if (t.type === "asset_disposal") { investing += amt; lines.assetDisposal += amt; }
+    else if (t.type === "capital_in") { financing += amt; lines.capitalIn += amt; }
+    else if (t.type === "drawing") { financing -= amt; lines.drawing += amt; }
+    else if (t.type === "loan_in") { financing += amt; lines.loanIn += amt; }
+    else if (t.type === "loan_repay") { financing -= amt; lines.loanRepay += amt; }
+  });
+  return { cashFromCustomers, cashForExpenses, operating, investing, financing, netChange: operating + investing + financing, lines };
 }
 
-function setFinTab(t) { state.finTab = t; render(); }
-function setFinFrom(v) { state.finFrom = v; render(); }
-function setFinTo(v) { state.finTo = v; render(); }
-function setFinAsOf(v) { state.finAsOf = v; render(); }
-window.setFinTab = setFinTab; window.setFinFrom = setFinFrom; window.setFinTo = setFinTo; window.setFinAsOf = setFinAsOf;
+// ---- Rendering ----
+function renderAcctTabs() {
+  const tabs = [["expenses", "Expenses"], ["txns", "Capital / Loans / Assets"], ["opening", "Opening Balances"],
+    ["income", "Income Statement"], ["balance", "Balance Sheet"], ["cashflow", "Cash Flow"]];
+  return '<div class="settings-tabs">' + tabs.map(([k, label]) =>
+    '<button type="button" class="settings-tab' + (state.acctTab === k ? ' active' : '') + '" onclick="setAcctTab(\'' + k + '\')">' + esc(label) + '</button>'
+  ).join('') + '</div>';
+}
 
-function finRow(label, val, opts) {
-  opts = opts || {};
-  return '<tr' + (opts.bold ? ' style="font-weight:700;border-top:1px solid var(--line)"' : '') + '>' +
-    '<td>' + (opts.indent ? '&nbsp;&nbsp;&nbsp;&nbsp;' : '') + esc(label) + '</td>' +
-    '<td class="num">' + fmt(val) + '</td></tr>';
+function renderExpensesTab() {
+  if (!state.expenseDraft) state.expenseDraft = newBlankExpense();
+  const e = state.expenseDraft;
+  let html = '<div class="form-card" style="max-width:640px"><div class="section-title">Record an expense</div>';
+  html += '<label class="field-label" style="display:block;margin-top:6px">Category</label><div class="vat-toggle" style="flex-wrap:wrap;margin-top:6px">' +
+    EXPENSE_CATEGORIES.map(([k, label]) => '<button type="button" class="vat-btn' + (e.category === k ? ' active' : '') + '" onclick="setExpenseDraftCategory(\'' + k + '\')">' + esc(label) + '</button>').join('') + '</div>';
+  if (e.category === "raw_materials") html += '<p class="settings-intro" style="margin-top:6px">Raw material purchases add to Inventory rather than reducing profit immediately — they flow into Cost of Goods Sold (and reduce profit) only as items are sold, based on each catalog item\'s Cost. Naming a Vendor below lists them under Suppliers on the Clients page.</p>';
+  html += '<div class="form-grid" style="margin-top:14px">' +
+    '<div><label class="field-label">Date</label><input type="date" class="field-input" value="' + esc(e.date) + '" oninput="updateExpenseDraftField(\'date\',this.value)"/></div>' +
+    '<div class="span2"><label class="field-label">Description</label><input class="field-input" placeholder="e.g. Raw tea leaves" value="' + esc(e.description) + '" oninput="updateExpenseDraftField(\'description\',this.value)"/></div>' +
+    '<div><label class="field-label">Quantity</label><input type="number" class="field-input" value="' + (e.qty || 0) + '" oninput="updateExpenseQtyRate(\'qty\',this.value)"/></div>' +
+    '<div><label class="field-label">Rate (per unit)</label><input type="number" class="field-input" value="' + (e.rate || 0) + '" oninput="updateExpenseQtyRate(\'rate\',this.value)"/></div>' +
+    '<div><label class="field-label">Amount</label><input type="number" class="field-input" id="exp-amount" value="' + (e.amount || 0) + '" oninput="updateExpenseDraftField(\'amount\',this.value)"/></div>' +
+    '<div><label class="field-label">Vendor / Supplier</label><input class="field-input" list="vendor-names" placeholder="Who you bought it from" value="' + esc(e.vendorName) + '" oninput="updateExpenseDraftField(\'vendorName\',this.value)"/>' +
+    '<datalist id="vendor-names">' + getKnownVendorNames().map(n => '<option value="' + esc(n) + '"></option>').join('') + '</datalist></div>' +
+    '<div><label class="field-label">Added by</label><div class="readonly-field">' + esc(state.currentAdmin ? state.currentAdmin.name : "—") + '</div></div>' +
+    '</div>';
+  html += '<p class="settings-intro" style="margin-top:-6px">Enter a Quantity and Rate to have Amount calculated automatically (e.g. 50 kg × Rs 120) — or leave Quantity at 1 and type Amount directly for a lump-sum expense like rent.</p>';
+  html += '<label class="field-label" style="margin-top:14px;display:block">Payment method</label><div class="vat-toggle">' +
+    '<button type="button" class="vat-btn' + ((e.paymentMethod || "cash") === "cash" ? ' active' : '') + '" onclick="setExpenseDraftPaymentMethod(\'cash\')">Cash</button>' +
+    '<button type="button" class="vat-btn' + (e.paymentMethod === "online" ? ' active' : '') + '" onclick="setExpenseDraftPaymentMethod(\'online\')">Bank / Online</button></div>';
+  html += '<button class="btn btn-primary" style="margin-top:16px" onclick="addExpense()">' + icon("plusCircle", 15) + ' Save expense</button></div>';
+
+  if (state.expenses.length === 0) {
+    html += emptyState("No expenses recorded yet", "Log raw materials, wages, rent, transport, and other overhead here — they flow straight into the Income Statement and Cash Flow.", null, null);
+    return html;
+  }
+  const total = state.expenses.reduce((s, e2) => s + (Number(e2.amount) || 0), 0);
+  html += '<div style="margin-top:22px" class="section-title">All expenses <span style="font-weight:400;color:var(--charcoal-soft)">(' + state.expenses.length + ' · ' + fmt(total) + ' total)</span></div>';
+  html += '<div class="table-wrap" style="margin-top:10px"><div class="t-head cols-expenses">' +
+    '<div>Date</div><div>Category</div><div>Description</div><div>Vendor</div><div>Added by</div><div>Payment</div><div>Amount</div><div></div></div>';
+  state.expenses.forEach(e2 => {
+    const qtyRateNote = (Number(e2.qty) > 0 && Number(e2.rate) > 0) ? (e2.qty + ' × ' + fmt(e2.rate)) : "";
+    html += '<div class="t-row cols-expenses">' +
+      '<div>' + esc(e2.date) + '</div>' +
+      '<div>' + esc(expenseCategoryLabel(e2.category)) + '</div>' +
+      '<div class="t-client">' + esc(e2.description || "—") + '</div>' +
+      '<div class="t-client">' + esc(e2.vendorName || "—") + '</div>' +
+      '<div>' + esc(e2.createdBy || "—") + '</div>' +
+      '<div>' + (e2.paymentMethod === "online" ? "Online" : "Cash") + '</div>' +
+      '<div class="t-amt">' + fmt(e2.amount) + (qtyRateNote ? '<div style="font-size:10.5px;font-weight:400;color:var(--charcoal-soft)">' + esc(qtyRateNote) + '</div>' : '') + '</div>' +
+      '<div><button class="btn-icon" onclick="deleteExpense(\'' + e2.id + '\')" title="Delete">' + icon("trash", 13) + '</button></div>' +
+      '</div>';
+  });
+  html += '</div>';
+  return html;
 }
-function finSectionHead(label) {
-  return '<tr><td colspan="2" style="padding-top:14px;font-weight:700;color:var(--charcoal-soft);text-transform:uppercase;font-size:11px;letter-spacing:.04em">' + esc(label) + '</td></tr>';
+
+function renderTxnsTab() {
+  if (!state.acctTxnDraft) state.acctTxnDraft = newBlankAcctTxn();
+  const t = state.acctTxnDraft;
+  const isAssetType = t.type === "asset_purchase" || t.type === "asset_disposal";
+  let html = '<div class="form-card" style="max-width:640px"><div class="section-title">Record capital, a loan, or a fixed asset move</div>' +
+    '<p class="settings-intro">Use this for money that isn\'t everyday trading — the owner putting money in or taking money out, loans, and buying or selling equipment/property.</p>';
+  html += '<label class="field-label" style="margin-top:10px;display:block">Type</label><div class="vat-toggle" style="flex-wrap:wrap;margin-top:6px">' +
+    ACCT_TXN_TYPES.map(([k, label]) => '<button type="button" class="vat-btn' + (t.type === k ? ' active' : '') + '" onclick="setAcctTxnDraftType(\'' + k + '\')">' + esc(label) + '</button>').join('') + '</div>';
+  if (isAssetType) {
+    html += '<label class="field-label" style="margin-top:14px;display:block">Depreciation category <span style="font-weight:400;color:var(--charcoal-soft)">(Nepal Income Tax Act, Schedule 2)</span></label><div class="vat-toggle" style="flex-wrap:wrap;margin-top:6px">' +
+      ASSET_POOLS.map(([k, label, rate]) => '<button type="button" class="vat-btn' + ((t.poolCategory || "poolD") === k ? ' active' : '') + '" onclick="setAcctTxnDraftPool(\'' + k + '\')">' + esc(label) + ' (' + rate + '% WDV)</button>').join('') +
+      '<button type="button" class="vat-btn' + (t.poolCategory === "poolE" ? ' active' : '') + '" onclick="setAcctTxnDraftPool(\'poolE\')">' + esc(POOL_E[1]) + ' (straight-line)</button></div>';
+  }
+  html += '<div class="form-grid" style="margin-top:14px">' +
+    '<div><label class="field-label">Date</label><input type="date" class="field-input" value="' + esc(t.date) + '" oninput="updateAcctTxnDraftField(\'date\',this.value)"/></div>' +
+    '<div><label class="field-label">Amount</label><input type="number" class="field-input" value="' + (t.amount || 0) + '" oninput="updateAcctTxnDraftField(\'amount\',this.value)"/></div>' +
+    '<div class="span2"><label class="field-label">Description (optional)</label><input class="field-input" placeholder="e.g. New rice-hulling machine" value="' + esc(t.description) + '" oninput="updateAcctTxnDraftField(\'description\',this.value)"/></div>' +
+    '</div>';
+  if (t.poolCategory === "poolE" && isAssetType) html += '<p class="settings-intro" style="margin-top:-6px">Intangible assets amortize straight-line over the useful life set in Opening Balances for Pool E — not a rate. Verify treatment with your tax advisor.</p>';
+  else if (isAssetType) html += '<p class="settings-intro" style="margin-top:-6px">Rates shown are the commonly used Schedule 2 rates on a reducing-balance basis — verify against the current Finance Act / your tax advisor, as rates can change year to year.</p>';
+  html += '<label class="field-label" style="display:block">Cash or bank?</label><div class="vat-toggle" style="margin-top:6px">' +
+    '<button type="button" class="vat-btn' + ((t.paymentMethod || "cash") === "cash" ? ' active' : '') + '" onclick="setAcctTxnDraftPaymentMethod(\'cash\')">Cash</button>' +
+    '<button type="button" class="vat-btn' + (t.paymentMethod === "online" ? ' active' : '') + '" onclick="setAcctTxnDraftPaymentMethod(\'online\')">Bank / Online</button></div>';
+  html += '<button class="btn btn-primary" style="margin-top:16px" onclick="addAcctTxn()">' + icon("plusCircle", 15) + ' Add entry</button></div>';
+
+  if (state.acctTxns.length === 0) {
+    html += emptyState("Nothing recorded yet", "Capital, loans, and fixed asset purchases/disposals will show up here once added.", null, null);
+    return html;
+  }
+  html += '<div style="margin-top:22px" class="section-title">All entries <span style="font-weight:400;color:var(--charcoal-soft)">(' + state.acctTxns.length + ')</span></div>';
+  html += '<div class="table-wrap" style="margin-top:10px"><div class="t-head cols-txns">' +
+    '<div>Date</div><div>Type</div><div>Description</div><div>Payment</div><div>Amount</div><div></div></div>';
+  state.acctTxns.forEach(t2 => {
+    const isAsset = t2.type === "asset_purchase" || t2.type === "asset_disposal";
+    const typeLabel = acctTxnTypeLabel(t2.type) + (isAsset ? ' — ' + assetPoolLabel(t2.poolCategory || "poolD").replace(/^Pool [A-E] — /, "") : "");
+    html += '<div class="t-row cols-txns">' +
+      '<div>' + esc(t2.date) + '</div>' +
+      '<div>' + esc(typeLabel) + '</div>' +
+      '<div class="t-client">' + esc(t2.description || "—") + '</div>' +
+      '<div>' + (t2.paymentMethod === "online" ? "Online" : "Cash") + '</div>' +
+      '<div class="t-amt">' + fmt(t2.amount) + '</div>' +
+      '<div><button class="btn-icon" onclick="deleteAcctTxn(\'' + t2.id + '\')" title="Delete">' + icon("trash", 13) + '</button></div>' +
+      '</div>';
+  });
+  html += '</div>';
+  return html;
 }
-function finPeriodFilterCard() {
-  return '<div class="card" style="margin-bottom:18px"><div class="section-title">Period</div><div style="display:flex;gap:14px;margin-top:12px;flex-wrap:wrap">' +
-    '<div><label class="field-label">From</label><input type="date" class="field-input" value="' + esc(state.finFrom) + '" oninput="setFinFrom(this.value)"/></div>' +
-    '<div><label class="field-label">To</label><input type="date" class="field-input" value="' + esc(state.finTo) + '" oninput="setFinTo(this.value)"/></div></div>' +
-    '<p class="settings-intro" style="margin-top:8px">Leave blank to include everything on record.</p></div>';
+
+function renderOpeningTab() {
+  const ro = isModerator();
+  if (!state.openingDraft) state.openingDraft = Object.assign({}, state.opening);
+  const d = state.openingDraft;
+  let html = '<div class="form-card" style="max-width:640px"><div class="section-title">Opening balances</div>' +
+    '<p class="settings-intro">The starting point the three statements build on. Everything dated after this date — invoices, expenses, and the entries in the other tabs — is added on top automatically.</p>' +
+    (ro ? '<div class="readonly-banner" style="margin-top:10px">' + icon("eye", 14) + ' Read-only — moderators can view this but not make changes.</div>' : '');
+  html += '<div class="form-grid" style="margin-top:14px">' +
+    '<div class="span2"><label class="field-label">As of date</label><input type="date" class="field-input" value="' + esc(d.asOfDate) + '"' + (ro ? ' disabled' : '') + ' oninput="updateOpeningDraftField(\'asOfDate\',this.value)"/></div>' +
+    '<div><label class="field-label">Cash in hand</label><input type="number" class="field-input" value="' + (d.cash || 0) + '"' + (ro ? ' disabled' : '') + ' oninput="updateOpeningDraftField(\'cash\',this.value)"/></div>' +
+    '<div><label class="field-label">Bank / Online balance</label><input type="number" class="field-input" value="' + (d.bank || 0) + '"' + (ro ? ' disabled' : '') + ' oninput="updateOpeningDraftField(\'bank\',this.value)"/></div>' +
+    '<div class="span2"><label class="field-label">Inventory (raw materials / stock)</label><input type="number" class="field-input" value="' + (d.openingInventory || 0) + '"' + (ro ? ' disabled' : '') + ' oninput="updateOpeningDraftField(\'openingInventory\',this.value)"/></div>' +
+    '</div>';
+  html += '<label class="field-label" style="display:block;margin-top:6px">Fixed assets — written-down value by category <span style="font-weight:400;color:var(--charcoal-soft)">(Nepal Income Tax Act, Schedule 2)</span></label>';
+  html += '<div class="form-grid" style="margin-top:10px">' +
+    ASSET_POOLS.map(([key, label, rate]) =>
+      '<div><label class="field-label">' + esc(label) + ' <span style="font-weight:400;color:var(--charcoal-soft)">(' + rate + '% p.a. WDV)</span></label><input type="number" class="field-input" value="' + (d[key] || 0) + '"' + (ro ? ' disabled' : '') + ' oninput="updateOpeningDraftField(\'' + key + '\',this.value)"/></div>'
+    ).join('') +
+    '</div>';
+  html += '<p class="settings-intro" style="margin-top:-6px">Pools A-D depreciate reducing-balance (WDV) at the rates shown.</p>';
+  html += '<div class="form-grid" style="margin-top:10px">' +
+    '<div><label class="field-label">' + esc(POOL_E[1]) + ' <span style="font-weight:400;color:var(--charcoal-soft)">(book value)</span></label><input type="number" class="field-input" value="' + (d.poolE || 0) + '"' + (ro ? ' disabled' : '') + ' oninput="updateOpeningDraftField(\'poolE\',this.value)"/></div>' +
+    '<div><label class="field-label">Useful life remaining (years)</label><input type="number" class="field-input" value="' + (d.poolEUsefulLifeYears || 5) + '"' + (ro ? ' disabled' : '') + ' oninput="updateOpeningDraftField(\'poolEUsefulLifeYears\',this.value)"/></div>' +
+    '</div>';
+  html += '<p class="settings-intro">Intangible assets with an ascertainable useful life are amortized straight-line over that life under the Act — not the WDV method used for Pools A-D. These figures are a simplified estimate, not a return-ready tax computation; verify against the current Finance Act / your tax advisor.</p>';
+  html += '<div class="form-grid" style="margin-top:14px">' +
+    '<div><label class="field-label">Loans payable</label><input type="number" class="field-input" value="' + (d.loansPayable || 0) + '"' + (ro ? ' disabled' : '') + ' oninput="updateOpeningDraftField(\'loansPayable\',this.value)"/></div>' +
+    '<div><label class="field-label">Owner\'s capital</label><input type="number" class="field-input" value="' + (d.ownersCapital || 0) + '"' + (ro ? ' disabled' : '') + ' oninput="updateOpeningDraftField(\'ownersCapital\',this.value)"/></div>' +
+    '</div>';
+  html += '<div id="opening-balance-check" style="margin-top:4px;font-size:13px;font-weight:600"></div>';
+  if (!ro) html += '<button class="btn btn-primary" style="margin-top:16px" onclick="saveOpeningForm()">' + icon("check", 15) + ' Save opening balances</button>';
+  html += '</div>';
+  return html;
+}
+
+function renderAcctPeriodPicker() {
+  return '<div class="card" style="margin-bottom:18px"><div class="section-title">Reporting period</div>' +
+    '<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-top:12px">' +
+    '<div><label class="field-label">From</label><input type="date" class="field-input" value="' + esc(state.acctFrom) + '" oninput="setAcctFrom(this.value)"/></div>' +
+    '<div><label class="field-label">To</label><input type="date" class="field-input" value="' + esc(state.acctTo) + '" oninput="setAcctTo(this.value)"/></div>' +
+    '<button class="btn btn-ghost" onclick="shiftAcctQuarter(-1)">← Previous quarter</button>' +
+    '<button class="btn btn-ghost" onclick="shiftAcctQuarter(1)">Next quarter →</button>' +
+    '</div><p class="settings-intro">Defaults to the Nepali fiscal quarter containing today — adjust the dates for a custom range.</p></div>';
 }
 
 function renderIncomeStatementTab() {
-  const s = computeIncomeStatement(state.finFrom, state.finTo);
-  let html = finPeriodFilterCard();
-  html += '<div class="sheet-wrap"><table class="sheet"><tbody>';
-  html += finRow("Sales revenue", s.salesRevenue);
-  html += finRow("Shipping / other revenue", s.shippingRevenue);
-  html += finRow("Total revenue", s.totalRevenue, { bold: true });
-  html += finRow("Cost of goods sold", -s.cogs);
-  html += finRow("Gross profit", s.grossProfit, { bold: true });
-  html += finSectionHead("Operating expenses");
-  EXPENSE_CATEGORIES.forEach(([k, label]) => { if (s.byCat[k]) html += finRow(label, s.byCat[k], { indent: true }); });
-  if (s.totalOpEx === 0) html += '<tr><td colspan="2" class="empty-row">None recorded for this period</td></tr>';
-  html += finRow("Total operating expenses", -s.totalOpEx, { bold: true });
-  html += finRow("Net income", s.netIncome, { bold: true });
-  html += '</tbody></table></div>';
-  html += '<div class="stat-row" style="margin-top:16px">' +
-    '<div class="stat-card"><div class="stat-label">Invoices in period</div><div class="stat-value">' + s.invoiceCount + '</div></div>' +
-    '<div class="stat-card"><div class="stat-label">Gross margin</div><div class="stat-value">' + (s.totalRevenue > 0 ? ((s.grossProfit / s.totalRevenue) * 100).toFixed(1) + '%' : '—') + '</div></div>' +
-    '<div class="stat-card"><div class="stat-label">Net margin</div><div class="stat-value">' + (s.totalRevenue > 0 ? ((s.netIncome / s.totalRevenue) * 100).toFixed(1) + '%' : '—') + '</div></div>' +
+  const r = acctIncomeStatement(state.acctFrom || null, state.acctTo || null);
+  let html = renderAcctPeriodPicker();
+  html += '<div class="stat-row" style="margin-bottom:20px">' +
+    '<div class="stat-card"><div class="stat-label">Revenue</div><div class="stat-value">' + fmt(r.revenue) + '</div></div>' +
+    '<div class="stat-card"><div class="stat-label">Cost of Goods Sold</div><div class="stat-value">' + fmt(r.cogs) + '</div></div>' +
+    '<div class="stat-card"><div class="stat-label">Gross Profit</div><div class="stat-value">' + fmt(r.grossProfit) + '</div></div>' +
+    '<div class="stat-card"><div class="stat-label">Net Profit</div><div class="stat-value" style="color:' + (r.netProfit >= 0 ? "var(--green)" : "var(--rust-deep)") + '">' + fmt(r.netProfit) + '</div></div>' +
     '</div>';
-  if (s.unknownCostLines > 0) html += '<p class="settings-intro" style="margin-top:12px">' + icon("alertTriangle", 13) + ' ' + s.unknownCostLines + ' sold line item(s) have no matching catalog cost, so Cost of Goods Sold may be understated. Set a "Cost per unit" on those items in the Item Catalog.</p>';
+  if (r.uncostedQty > 0) html += '<div class="readonly-banner" style="margin-bottom:16px">' + icon("alertTriangle", 14) + ' ' + r.uncostedQty + ' unit(s) sold in this period have no Cost set (on the invoice line or the catalog item), so they\'re counted as zero cost below — enter a Cost when billing, or set one on the catalog item, for accurate COGS.</div>';
+  html += '<div class="card"><div class="section-title">Statement of Profit or Loss <span style="font-weight:400;color:var(--charcoal-soft)">(Income Statement)</span></div><div style="margin-top:14px;max-width:480px">' +
+    '<div class="totals-row"><span class="lbl">Revenue (' + r.invoiceCount + ' invoice' + (r.invoiceCount === 1 ? "" : "s") + ')</span><span>' + fmt(r.revenue) + '</span></div>' +
+    '<div class="totals-row"><span class="lbl">Less: Cost of Goods Sold</span><span>-' + fmt(r.cogs) + '</span></div>' +
+    '<div style="border-top:1px solid var(--line);margin-top:4px;padding-top:6px"><div class="totals-row bold"><span class="lbl">Gross Profit</span><span>' + fmt(r.grossProfit) + '</span></div></div>';
+  EXPENSE_CATEGORIES.forEach(([k, label]) => {
+    if (r.expByCat[k]) html += '<div class="totals-row" style="margin-top:8px"><span class="lbl">Less: ' + esc(label) + '</span><span>-' + fmt(r.expByCat[k]) + '</span></div>';
+  });
+  if (r.depreciation) html += '<div class="totals-row" style="margin-top:8px"><span class="lbl">Less: Depreciation (non-cash)</span><span>-' + fmt(r.depreciation) + '</span></div>';
+  html += '<div style="border-top:2px solid var(--charcoal);margin-top:8px;padding-top:6px"><div class="totals-row bold" style="color:' + (r.netProfit >= 0 ? "var(--green)" : "var(--rust-deep)") + '"><span class="lbl">Net Profit</span><span>' + fmt(r.netProfit) + '</span></div></div>';
+  html += '</div><button class="btn btn-ghost" style="margin-top:16px" onclick="downloadIncomeStatementCSV()">' + icon("download", 14) + ' Download CSV</button></div>';
   return html;
 }
 
 function renderBalanceSheetTab() {
-  const bs = computeBalanceSheet(state.finAsOf);
-  let html = '<div class="card" style="margin-bottom:18px"><div class="section-title">As of</div><div style="margin-top:12px;max-width:220px"><input type="date" class="field-input" value="' + esc(state.finAsOf) + '" oninput="setFinAsOf(this.value)"/></div></div>';
-  html += '<div class="sheet-wrap"><table class="sheet"><tbody>';
-  html += finSectionHead("Assets");
-  html += finRow("Cash", bs.cash, { indent: true });
-  html += finRow("Accounts receivable", bs.accountsReceivable, { indent: true });
-  html += finRow("Total assets", bs.totalAssets, { bold: true });
-  html += finSectionHead("Liabilities");
-  html += finRow("Accounts payable", bs.accountsPayable, { indent: true });
-  html += finRow("Total liabilities", bs.totalLiabilities, { bold: true });
-  html += finSectionHead("Equity");
-  html += finRow("Owner's capital (opening cash)", bs.ownersCapital, { indent: true });
-  html += finRow("Retained earnings", bs.retainedEarnings, { indent: true });
-  html += finRow("Total equity", bs.totalEquity, { bold: true });
-  html += finRow("Total liabilities + equity", bs.totalLiabilities + bs.totalEquity, { bold: true });
-  html += '</tbody></table></div>';
-  html += '<p class="settings-intro" style="margin-top:12px">Simplified management balance sheet: cost of goods sold is treated as a cash cost at time of sale, so no separate raw-material inventory or matching payables are tracked. Set an accurate "Opening cash balance" under Settings → Company so this reconciles with your real bank/cash balance — and have an accountant review before relying on it for statutory filings.</p>';
+  const asOf = state.balanceAsOf || todayISO();
+  const cb = acctCashBankAsOf(asOf);
+  const poolBreakdown = acctFixedAssetsByPool(addDaysISO(state.opening.asOfDate, 1), asOf);
+  const faGross = poolBreakdown.reduce((s, p) => s + p.gross, 0);
+  const accDep = poolBreakdown.reduce((s, p) => s + p.dep, 0);
+  const faNet = faGross - accDep;
+  const inventory = acctInventoryAsOf(asOf);
+  const ar = acctReceivablesAsOf(asOf);
+  const loans = acctLoansAsOf(asOf);
+  const capital = acctCapitalAsOf(asOf);
+  const retained = acctIncomeStatement(addDaysISO(state.opening.asOfDate, 1), asOf).netProfit;
+  const totalEquity = capital + retained;
+  const totalAssets = cb.cash + cb.bank + ar + inventory + faNet;
+  const totalLiabEquity = totalEquity + loans;
+  const diff = Math.round((totalAssets - totalLiabEquity) * 100) / 100;
+
+  let html = '<div class="card" style="margin-bottom:18px"><div class="section-title">As of</div>' +
+    '<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-top:12px">' +
+    '<div><label class="field-label">Date</label><input type="date" class="field-input" value="' + esc(asOf) + '" oninput="setBalanceAsOf(this.value)"/></div>' +
+    '<button class="btn btn-ghost" onclick="setBalanceAsOf(\'' + todayISO() + '\')">Today</button>' +
+    '<button class="btn btn-ghost" onclick="setBalanceAsOf(\'' + fiscalQuarterBounds(new Date(asOf)).to + '\')">This quarter\'s end</button>' +
+    '</div></div>';
+
+  html += '<div class="section-title" style="margin-bottom:10px">Statement of Financial Position <span style="font-weight:400;color:var(--charcoal-soft)">(Balance Sheet)</span></div>';
+  html += '<div class="grid-2">';
+  html += '<div class="col-narrow card"><div class="section-title">Assets</div><div style="margin-top:12px">' +
+    '<div class="totals-row"><span class="lbl">Cash in hand</span><span>' + fmt(cb.cash) + '</span></div>' +
+    '<div class="totals-row"><span class="lbl">Bank / Online balance</span><span>' + fmt(cb.bank) + '</span></div>' +
+    '<div class="totals-row"><span class="lbl">Accounts receivable</span><span>' + fmt(ar) + '</span></div>' +
+    '<div class="totals-row"><span class="lbl">Inventory (raw materials / stock)</span><span>' + fmt(inventory) + '</span></div>';
+  html += '<div class="totals-row" style="margin-top:8px"><span class="lbl" style="font-weight:600">Fixed assets by category (net)</span><span></span></div>';
+  poolBreakdown.forEach(p => {
+    if (!p.gross) return;
+    const basis = p.method === "SL" ? ('straight-line over ' + p.life + 'y useful life') : (p.rate + '% WDV');
+    html += '<div class="totals-row" style="padding-left:8px"><span class="lbl" title="At cost ' + fmt(p.gross) + ' less accumulated ' + (p.method === "SL" ? "amortization" : "depreciation") + ' ' + fmt(p.dep) + ' at ' + basis + '">' + esc(p.label) + '</span><span>' + fmt(p.net) + '</span></div>';
+  });
+  html += '<div class="totals-row"><span class="lbl">Fixed assets (net)</span><span>' + fmt(faNet) + '</span></div>' +
+    '<div style="border-top:2px solid var(--charcoal);margin-top:8px;padding-top:6px"><div class="totals-row bold"><span class="lbl">Total Assets</span><span>' + fmt(totalAssets) + '</span></div></div>' +
+    '</div></div>';
+  html += '<div class="col-narrow card"><div class="section-title">Equity &amp; Liabilities</div><div style="margin-top:12px">' +
+    '<div class="totals-row"><span class="lbl">Owner\'s capital</span><span>' + fmt(capital) + '</span></div>' +
+    '<div class="totals-row"><span class="lbl">Retained earnings</span><span>' + fmt(retained) + '</span></div>' +
+    '<div class="totals-row" style="margin-top:4px"><span class="lbl">Total Equity</span><span>' + fmt(totalEquity) + '</span></div>' +
+    '<div class="totals-row" style="margin-top:8px"><span class="lbl">Loans payable</span><span>' + fmt(loans) + '</span></div>' +
+    '<div class="totals-row"><span class="lbl">Total Liabilities</span><span>' + fmt(loans) + '</span></div>' +
+    '<div style="border-top:2px solid var(--charcoal);margin-top:8px;padding-top:6px"><div class="totals-row bold"><span class="lbl">Total Equity + Liabilities</span><span>' + fmt(totalLiabEquity) + '</span></div></div>' +
+    '</div></div>';
+  html += '</div>';
+
+  html += '<div style="margin-top:16px;font-size:13px;font-weight:600">' + (diff === 0
+    ? '<span style="color:var(--green)">' + icon("check", 14) + ' Balanced</span>'
+    : '<span style="color:var(--rust-deep)">' + icon("alertTriangle", 14) + ' Out of balance by ' + fmt(Math.abs(diff)) + '</span>') + '</div>';
+  html += '<p class="settings-intro" style="margin-top:6px">Receivables reflect each invoice\'s current due balance rather than a dated payment history, so this figure is exact for today and an approximation for past dates.</p>';
+  if (inventory < 0) html += '<div class="readonly-banner" style="margin-top:8px">' + icon("alertTriangle", 14) + ' Inventory is negative — Cost of Goods Sold has been recognised on the Income Statement without a matching purchase logged under "Raw materials / purchases" in Expenses. Log the purchase to correct it.</div>';
+  html += '<button class="btn btn-ghost" style="margin-top:10px" onclick="downloadBalanceSheetCSV()">' + icon("download", 14) + ' Download CSV</button>';
   return html;
 }
 
 function renderCashFlowTab() {
-  const cf = computeCashFlow(state.finFrom, state.finTo);
-  let html = finPeriodFilterCard();
-  html += '<div class="sheet-wrap"><table class="sheet"><tbody>';
-  html += finSectionHead("Cash flow from operations");
-  html += finRow("Cash collected from clients", cf.cashCollected, { indent: true });
-  html += finRow("Cash paid for cost of goods", -cf.cogsForPeriod, { indent: true });
-  html += finRow("Cash paid for operating expenses", -cf.cashExpensesPaid, { indent: true });
-  html += finRow("Net cash from operations", cf.netCashFromOps, { bold: true });
-  html += '<tr style="border-top:1px solid var(--line)"><td style="padding-top:14px">Beginning cash</td><td class="num" style="padding-top:14px">' + fmt(cf.beginningCash) + '</td></tr>';
-  html += finRow("Ending cash", cf.endingCash, { bold: true });
-  html += '</tbody></table></div>';
-  html += '<p class="settings-intro" style="margin-top:12px">Payment dates aren\'t tracked separately from invoice dates, so cash collected is approximated from each invoice\'s current "Amount paid" against its invoice date. No financing or investing activity (loans, equipment purchases) is tracked separately — everything here is operating cash flow.</p>';
+  const cf = acctCashFlow(state.acctFrom || null, state.acctTo || null);
+  const openingCB = acctCashBankAsOf(addDaysISO(state.acctFrom, -1));
+  const closingCB = acctCashBankAsOf(state.acctTo || null);
+  const openingTotal = openingCB.cash + openingCB.bank;
+  const closingTotal = closingCB.cash + closingCB.bank;
+
+  let html = renderAcctPeriodPicker();
+  html += '<p class="settings-intro" style="margin-top:-10px;margin-bottom:16px">Cash received from customers is taken as each invoice\'s Amount Paid on its invoice date — this app doesn\'t keep a separate dated payment history, so same-day receipt is assumed.</p>';
+  html += '<div class="stat-row" style="margin-bottom:20px">' +
+    '<div class="stat-card"><div class="stat-label">Operating</div><div class="stat-value">' + fmt(cf.operating) + '</div></div>' +
+    '<div class="stat-card"><div class="stat-label">Investing</div><div class="stat-value">' + fmt(cf.investing) + '</div></div>' +
+    '<div class="stat-card"><div class="stat-label">Financing</div><div class="stat-value">' + fmt(cf.financing) + '</div></div>' +
+    '<div class="stat-card"><div class="stat-label">Net change in cash</div><div class="stat-value" style="color:' + (cf.netChange >= 0 ? "var(--green)" : "var(--rust-deep)") + '">' + fmt(cf.netChange) + '</div></div>' +
+    '</div>';
+
+  html += '<div class="card"><div class="section-title">Statement of Cash Flows <span style="font-weight:400;color:var(--charcoal-soft)">(Direct Method)</span></div><div style="margin-top:14px;max-width:480px">' +
+    '<div class="totals-row bold"><span class="lbl">Operating activities</span><span></span></div>' +
+    '<div class="totals-row"><span class="lbl">Cash received from customers</span><span>' + fmt(cf.cashFromCustomers) + '</span></div>' +
+    '<div class="totals-row"><span class="lbl">Cash paid for expenses</span><span>-' + fmt(cf.cashForExpenses) + '</span></div>' +
+    '<div class="totals-row" style="margin-top:4px"><span class="lbl">Net cash from operating</span><span>' + fmt(cf.operating) + '</span></div>';
+  html += '<div class="totals-row bold" style="margin-top:14px"><span class="lbl">Investing activities</span><span></span></div>';
+  if (cf.lines.assetPurchase) html += '<div class="totals-row"><span class="lbl">Fixed asset purchases</span><span>-' + fmt(cf.lines.assetPurchase) + '</span></div>';
+  if (cf.lines.assetDisposal) html += '<div class="totals-row"><span class="lbl">Fixed asset disposals</span><span>' + fmt(cf.lines.assetDisposal) + '</span></div>';
+  html += '<div class="totals-row" style="margin-top:4px"><span class="lbl">Net cash from investing</span><span>' + fmt(cf.investing) + '</span></div>';
+  html += '<div class="totals-row bold" style="margin-top:14px"><span class="lbl">Financing activities</span><span></span></div>';
+  if (cf.lines.capitalIn) html += '<div class="totals-row"><span class="lbl">Owner\'s capital contributed</span><span>' + fmt(cf.lines.capitalIn) + '</span></div>';
+  if (cf.lines.drawing) html += '<div class="totals-row"><span class="lbl">Owner\'s drawings</span><span>-' + fmt(cf.lines.drawing) + '</span></div>';
+  if (cf.lines.loanIn) html += '<div class="totals-row"><span class="lbl">Loans received</span><span>' + fmt(cf.lines.loanIn) + '</span></div>';
+  if (cf.lines.loanRepay) html += '<div class="totals-row"><span class="lbl">Loan repayments</span><span>-' + fmt(cf.lines.loanRepay) + '</span></div>';
+  html += '<div class="totals-row" style="margin-top:4px"><span class="lbl">Net cash from financing</span><span>' + fmt(cf.financing) + '</span></div>';
+  html += '<div style="border-top:2px solid var(--charcoal);margin-top:10px;padding-top:6px">' +
+    '<div class="totals-row bold"><span class="lbl">Net change in cash</span><span>' + fmt(cf.netChange) + '</span></div>' +
+    '<div class="totals-row"><span class="lbl">Opening cash + bank</span><span>' + fmt(openingTotal) + '</span></div>' +
+    '<div class="totals-row bold"><span class="lbl">Closing cash + bank</span><span>' + fmt(closingTotal) + '</span></div>' +
+    '</div></div>';
+  html += '<button class="btn btn-ghost" style="margin-top:16px" onclick="downloadCashFlowCSV()">' + icon("download", 14) + ' Download CSV</button></div>';
   return html;
 }
 
-function renderFinTabs() {
-  const tabs = [["income", "Income statement"], ["balance", "Balance sheet"], ["cashflow", "Cash flow"]];
-  return '<div class="settings-tabs">' + tabs.map(([k, label]) =>
-    '<button class="settings-tab' + (state.finTab === k ? ' active' : '') + '" onclick="setFinTab(\'' + k + '\')">' + esc(label) + '</button>').join("") + '</div>';
+function renderAccounting() {
+  const tabFns = { expenses: renderExpensesTab, txns: renderTxnsTab, opening: renderOpeningTab, income: renderIncomeStatementTab, balance: renderBalanceSheetTab, cashflow: renderCashFlowTab };
+  return renderAcctTabs() + (tabFns[state.acctTab] || renderExpensesTab)();
 }
-function renderFinancials() {
-  const tabFns = { income: renderIncomeStatementTab, balance: renderBalanceSheetTab, cashflow: renderCashFlowTab };
-  return renderFinTabs() + (tabFns[state.finTab] || renderIncomeStatementTab)();
+
+// ---- CSV exports for the three statements ----
+function downloadIncomeStatementCSV() {
+  const r = acctIncomeStatement(state.acctFrom || null, state.acctTo || null);
+  const rows = [["Statement of Profit or Loss (Income Statement)", state.acctFrom + " to " + state.acctTo], [],
+    ["Revenue", r.revenue.toFixed(2)], ["Cost of Goods Sold", "-" + r.cogs.toFixed(2)], ["Gross Profit", r.grossProfit.toFixed(2)]];
+  EXPENSE_CATEGORIES.forEach(([k, label]) => { if (r.expByCat[k]) rows.push([label, "-" + r.expByCat[k].toFixed(2)]); });
+  if (r.depreciation) rows.push(["Depreciation (non-cash)", "-" + r.depreciation.toFixed(2)]);
+  rows.push(["Net Profit", r.netProfit.toFixed(2)]);
+  downloadCSVRows("income-statement-" + state.acctFrom + "-to-" + state.acctTo + ".csv", rows);
+  showToast("Income Statement CSV downloaded", "success");
 }
+window.downloadIncomeStatementCSV = downloadIncomeStatementCSV;
+
+function downloadBalanceSheetCSV() {
+  const asOf = state.balanceAsOf || todayISO();
+  const cb = acctCashBankAsOf(asOf), inventory = acctInventoryAsOf(asOf), ar = acctReceivablesAsOf(asOf), loans = acctLoansAsOf(asOf), capital = acctCapitalAsOf(asOf);
+  const poolBreakdown = acctFixedAssetsByPool(addDaysISO(state.opening.asOfDate, 1), asOf);
+  const faGross = poolBreakdown.reduce((s, p) => s + p.gross, 0);
+  const accDep = poolBreakdown.reduce((s, p) => s + p.dep, 0);
+  const faNet = faGross - accDep;
+  const retained = acctIncomeStatement(addDaysISO(state.opening.asOfDate, 1), asOf).netProfit;
+  const totalEquity = capital + retained;
+  const rows = [["Statement of Financial Position (Balance Sheet)", "As of " + asOf], [],
+    ["Assets", ""], ["Cash in hand", cb.cash.toFixed(2)], ["Bank / Online balance", cb.bank.toFixed(2)], ["Accounts receivable", ar.toFixed(2)], ["Inventory (raw materials / stock)", inventory.toFixed(2)], []];
+  rows.push(["Fixed assets by category (Nepal Income Tax Act, Schedule 2)", "Basis", "At cost", "Accumulated depreciation/amortization", "Net"]);
+  poolBreakdown.forEach(p => { rows.push([p.label, p.method === "SL" ? ("SL over " + p.life + "y") : (p.rate + "% WDV"), p.gross.toFixed(2), p.dep.toFixed(2), p.net.toFixed(2)]); });
+  rows.push(["Fixed assets (net)", "", "", "", faNet.toFixed(2)], []);
+  rows.push(["Total Assets", (cb.cash + cb.bank + ar + inventory + faNet).toFixed(2)], [],
+    ["Equity & Liabilities", ""], ["Owner's capital", capital.toFixed(2)], ["Retained earnings", retained.toFixed(2)], ["Total Equity", totalEquity.toFixed(2)],
+    ["Loans payable", loans.toFixed(2)], ["Total Liabilities", loans.toFixed(2)],
+    ["Total Equity + Liabilities", (totalEquity + loans).toFixed(2)]);
+  downloadCSVRows("balance-sheet-" + asOf + ".csv", rows);
+  showToast("Balance Sheet CSV downloaded", "success");
+}
+window.downloadBalanceSheetCSV = downloadBalanceSheetCSV;
+
+function downloadCashFlowCSV() {
+  const cf = acctCashFlow(state.acctFrom || null, state.acctTo || null);
+  const openingCB = acctCashBankAsOf(addDaysISO(state.acctFrom, -1));
+  const closingCB = acctCashBankAsOf(state.acctTo || null);
+  const rows = [["Statement of Cash Flows", state.acctFrom + " to " + state.acctTo], [],
+    ["Cash received from customers", cf.cashFromCustomers.toFixed(2)], ["Cash paid for expenses", "-" + cf.cashForExpenses.toFixed(2)], ["Net cash from operating", cf.operating.toFixed(2)], [],
+    ["Fixed asset purchases", "-" + cf.lines.assetPurchase.toFixed(2)], ["Fixed asset disposals", cf.lines.assetDisposal.toFixed(2)], ["Net cash from investing", cf.investing.toFixed(2)], [],
+    ["Owner's capital contributed", cf.lines.capitalIn.toFixed(2)], ["Owner's drawings", "-" + cf.lines.drawing.toFixed(2)], ["Loans received", cf.lines.loanIn.toFixed(2)], ["Loan repayments", "-" + cf.lines.loanRepay.toFixed(2)],
+    ["Net cash from financing", cf.financing.toFixed(2)], [],
+    ["Net change in cash", cf.netChange.toFixed(2)], ["Opening cash + bank", (openingCB.cash + openingCB.bank).toFixed(2)], ["Closing cash + bank", (closingCB.cash + closingCB.bank).toFixed(2)]];
+  downloadCSVRows("cash-flow-" + state.acctFrom + "-to-" + state.acctTo + ".csv", rows);
+  showToast("Cash Flow CSV downloaded", "success");
+}
+window.downloadCashFlowCSV = downloadCashFlowCSV;
 
 function renderFormTotalsOnly() {
   const t = invoiceTotals(state.draft);
@@ -2719,18 +3273,20 @@ function renderForm() {
     });
     html += '</div>';
   }
-  html += '<div class="items-table"><div class="items-head"><div>Description</div><div>Qty</div><div>Unit</div><div>Rate</div><div>Amount</div><div></div></div>';
+  html += '<div class="items-table"><div class="items-head"><div>Description</div><div>Qty</div><div>Unit</div><div>Rate</div><div>Cost</div><div>Amount</div><div></div></div>';
   inv.items.forEach(it => {
     html += '<div class="items-row">' +
       '<div class="item-desc"><span class="mobile-field-label">Description</span><input class="field-input locked-field" readonly title="Set by selecting a catalog item above" value="' + esc(it.desc) + '" placeholder="Item / service description"/></div>' +
       '<div class="item-qty"><span class="mobile-field-label">Qty</span><input type="number" class="field-input" value="' + it.qty + '" oninput="updateDraftItem(\'' + it.id + '\',\'qty\',this.value)"/></div>' +
       '<div class="item-unit"><span class="mobile-field-label">Unit</span><input class="field-input locked-field" readonly title="Set by selecting a catalog item above" value="' + esc(it.unit || "") + '" placeholder="pcs, kg, hr…"/></div>' +
       '<div class="item-rate"><span class="mobile-field-label">Rate</span><input type="number" class="field-input" value="' + it.rate + '" oninput="updateDraftItem(\'' + it.id + '\',\'rate\',this.value)"/></div>' +
+      '<div class="item-rate"><span class="mobile-field-label">Cost</span><input type="number" class="field-input" title="Cost of goods sold for this line — prefilled from the catalog item, editable if today\'s cost differs" value="' + (it.cost || 0) + '" oninput="updateDraftItem(\'' + it.id + '\',\'cost\',this.value)"/></div>' +
       '<div class="item-amt-wrap"><span class="mobile-field-label" style="margin:0">Amount</span><div class="item-amt">' + fmt((Number(it.qty) || 0) * (Number(it.rate) || 0)) + '</div></div>' +
       '<button class="item-remove" onclick="removeDraftItem(\'' + it.id + '\')">' + icon("minus", 14) + '</button>' +
       '</div>';
   });
   html += '</div>';
+  html += '<p class="settings-intro" style="margin-top:6px">Cost is for internal Cost of Goods Sold tracking only — it never appears on the printed invoice.</p>';
 
   html += '<div class="form-bottom-row"><div style="flex:1 1 260px"><label class="field-label">Notes</label>' +
     '<textarea class="field-textarea" placeholder="Payment terms, bank details, etc." oninput="updateDraftField(\'notes\',this.value)">' + esc(inv.notes) + '</textarea></div>';
@@ -2756,7 +3312,7 @@ function renderForm() {
     '<label class="field-label" style="margin-top:14px">Payment method</label>' +
     '<div class="vat-toggle">' +
     '<button type="button" class="vat-btn ' + ((inv.paymentMethod || "cash") === "cash" ? "active" : "") + '" onclick="setDraftPaymentMethod(\'cash\')" title="Paid in cash">Cash</button>' +
-    '<button type="button" class="vat-btn ' + (inv.paymentMethod === "online" ? "active" : "") + '" onclick="setDraftPaymentMethod(\'online\')" title="Paid online / bank transfer">Online</button>' +
+    '<button type="button" class="vat-btn ' + (inv.paymentMethod === "online" ? "active" : "") + '" onclick="setDraftPaymentMethod(\'online\')" title="Paid online / bank transfer">Bank / Online</button>' +
     '</div>' +
     '</div></div>';
 
@@ -2870,10 +3426,7 @@ function renderCompanyTab() {
   fields.forEach(([k, label]) => {
     html += '<div><label class="field-label">' + label + '</label><input class="field-input" data-k="' + k + '" value="' + esc(c[k]) + '"' + (ro ? ' disabled' : '') + '/></div>';
   });
-  html += '<div><label class="field-label">Opening cash balance</label><input type="number" class="field-input" data-k="openingCash" value="' + (Number(c.openingCash) || 0) + '"' + (ro ? ' disabled' : '') + '/></div>';
-  html += '</div>' +
-    '<p class="settings-intro" style="margin-top:10px">Opening cash balance is the cash on hand before this app started tracking anything — it\'s used as the starting point for the Balance Sheet and Cash Flow statement under Financials.</p>' +
-    (ro ? '' : '<button class="btn btn-primary" id="settings-save-btn" style="margin-top:20px" onclick="saveCompanyForm()">' + icon("check", 15) + ' Save changes</button>') + '</div>';
+  html += '</div>' + (ro ? '' : '<button class="btn btn-primary" id="settings-save-btn" style="margin-top:20px" onclick="saveCompanyForm()">' + icon("check", 15) + ' Save changes</button>') + '</div>';
   return html;
 }
 
@@ -2954,9 +3507,7 @@ function render() {
       '<div style="font-size:9.5px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;margin-top:2px;color:' + (ro ? 'var(--amber)' : '#7DAF8F') + '">' + (ro ? 'Moderator · read-only settings' : 'Admin') + '</div>';
   }
   const pageFns = { dashboard: renderDashboard, list: renderList, clients: renderClients, clientDetail: renderClientDetail, settings: renderSettings, new: renderForm, edit: renderForm, view: renderView,
-    items: renderItems, itemNew: renderItemForm, itemEdit: renderItemForm, sales: renderSales,
-    expenses: renderExpenses, expenseNew: renderExpenseForm, expenseEdit: renderExpenseForm, financials: renderFinancials,
-    sellers: renderSellers, sellerDetail: renderSellerDetail };
+    items: renderItems, itemNew: renderItemForm, itemEdit: renderItemForm, sales: renderSales, accounting: renderAccounting };
   document.getElementById("main-content").innerHTML = (pageFns[state.page] || renderDashboard)();
   if (state.page === "new" || state.page === "edit") { renderFormTotalsOnly(); if (formError) liveValidateClientName(); updateClientDueInfo(); updateSaveButtonState(); }
   if (state.page === "new" && autofocusClientName) {
