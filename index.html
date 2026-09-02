@@ -185,6 +185,8 @@
   .field-input:disabled, .field-textarea:disabled, .field-select:disabled { background: var(--paper-dim); color: var(--charcoal-soft); cursor: not-allowed; }
   .readonly-banner { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; color: var(--amber-deep);
     background: var(--amber-soft); border: 1px solid rgba(201,147,47,0.3); border-radius: 8px; padding: 9px 12px; margin-bottom: 16px; }
+  .danger-banner { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; color: var(--red-deep);
+    background: var(--red-soft); border: 1px solid rgba(180,60,60,0.3); border-radius: 8px; padding: 9px 12px; margin-bottom: 16px; }
   .field-textarea { min-height: 60px; resize: vertical; }
   .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
   .form-grid .span2 { grid-column: 1 / -1; }
@@ -2002,20 +2004,23 @@ function renderNav() {
     ["image", "items", "Item Catalog", ["items", "itemNew", "itemEdit"]],
     ["barChart", "sales", "Sales Review", ["sales"]],
     ["creditCard", "accounting", "Accounting", ["accounting"]],
+    ["trendDown", "expenses", "Expenses", ["expenses"]],
     ["users", "clients", "Clients", ["clients", "clientDetail"]],
     ["settings", "settings", "Settings", ["settings"]],
   ];
   const nav = document.getElementById("nav");
+  const unpaidExpenseCount = state.expenses.filter(e => e.status === "unpaid").length;
   nav.innerHTML = items.map(([ic, pg, label, matches]) => {
     const active = matches.includes(state.page);
-    return '<button class="nav-item' + (active ? ' active' : '') + '" title="' + esc(label) + '" onclick="goto_(\'' + pg + '\')">' + icon(ic, 17) + ' <span class="nav-label">' + label + '</span></button>';
+    const badge = (pg === "expenses" && unpaidExpenseCount > 0) ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red);margin-left:4px;flex-shrink:0" title="' + unpaidExpenseCount + ' unpaid expense' + (unpaidExpenseCount === 1 ? '' : 's') + '"></span>' : '';
+    return '<button class="nav-item' + (active ? ' active' : '') + '" title="' + esc(label) + (badge ? ' — ' + unpaidExpenseCount + ' unpaid' : '') + '" onclick="goto_(\'' + pg + '\')">' + icon(ic, 17) + ' <span class="nav-label">' + label + '</span>' + badge + '</button>';
   }).join("");
 }
 
 function renderTopbar() {
   document.getElementById("topbar-company").textContent = state.company.name;
   const titles = { dashboard: "Dashboard", list: "Invoices", clients: "Clients", clientDetail: state.activeClientName || "Client", settings: "Settings", new: "New invoice", edit: "Edit invoice",
-    items: "Item Catalog", itemNew: "New item", itemEdit: "Edit item", sales: "Sales Review", accounting: "Accounting",
+    items: "Item Catalog", itemNew: "New item", itemEdit: "Edit item", sales: "Sales Review", accounting: "Accounting", expenses: "Expenses",
     view: (state.invoices.find(i => i.id === state.activeId) || {}).number || "Invoice" };
   document.getElementById("topbar-title").textContent = titles[state.page] || "";
 }
@@ -2309,7 +2314,7 @@ function renderSuppliersBody() {
     byVendor[key].count += 1;
   });
   let rows = Object.entries(byVendor).map(([name, v]) => Object.assign({ name }, v)).sort((a, b) => b.total - a.total);
-  if (rows.length === 0) return emptyState("No suppliers yet", "Suppliers appear here once you name a Vendor / Supplier while recording an expense.", "Record an expense", "goto_('accounting')");
+  if (rows.length === 0) return emptyState("No suppliers yet", "Suppliers appear here once you name a Vendor / Supplier while recording an expense.", "Record an expense", "goto_('expenses')");
   const q = supplierSearchQuery.trim().toLowerCase();
   if (q) rows = rows.filter(v => v.name.toLowerCase().includes(q));
   if (rows.length === 0) return emptyState("No matches", "Try a different search term.", null, "");
@@ -2646,18 +2651,24 @@ async function addExpense() {
   } catch (err) { console.error(err); showToast("Couldn't save the expense: " + (err && err.message ? err.message : "try again"), "error"); }
 }
 window.addExpense = addExpense;
-// Loads an existing expense into the form above the table for editing.
-// Saving calls the same addExpense() — it upserts, so it updates in place.
+// Loads an existing expense into the entry form (under Accounting > Record Expense)
+// for editing. Saving calls the same addExpense() — it upserts, so it updates in place.
 function editExpense(id) {
   const e = state.expenses.find(x => x.id === id);
   if (!e) return;
   state.expenseDraft = Object.assign({}, e);
   state.editingExpenseId = id;
-  render();
-  const card = document.querySelector(".form-card");
-  if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+  state.acctTab = "expenses";
+  goto_("accounting");
 }
 window.editExpense = editExpense;
+function newExpenseEntry() {
+  state.expenseDraft = newBlankExpense();
+  state.editingExpenseId = null;
+  state.acctTab = "expenses";
+  goto_("accounting");
+}
+window.newExpenseEntry = newExpenseEntry;
 function cancelEditExpense() {
   state.expenseDraft = newBlankExpense();
   state.editingExpenseId = null;
@@ -2767,6 +2778,7 @@ function acctCashBankAsOf(asOfIso) {
     if ((inv.paymentMethod || "cash") === "online") bank += paid; else cash += paid;
   });
   state.expenses.forEach(e => {
+    if (e.status === "unpaid") return; // not yet paid — no cash impact; sits in Accounts Payable instead
     const d = new Date(e.date);
     if (openingDate && d <= openingDate) return;
     if (upTo && d > upTo) return;
@@ -2878,6 +2890,20 @@ function acctReceivablesAsOf(asOfIso) {
   });
   return ar;
 }
+// Accounts payable: expenses that have been recognised (they already reduced
+// profit on the Income Statement, accrual-style) but not yet paid in cash —
+// so they must appear as a liability here or the Balance Sheet won't balance.
+function acctPayablesAsOf(asOfIso) {
+  const upTo = asOfIso ? new Date(asOfIso) : null;
+  let ap = 0;
+  state.expenses.forEach(e => {
+    if (e.status !== "unpaid") return;
+    const d = new Date(e.date);
+    if (upTo && d > upTo) return;
+    ap += Number(e.amount) || 0;
+  });
+  return ap;
+}
 // Cost of Goods Sold for one invoice line: the cost entered on the invoice
 // itself takes precedence (so today's actual purchase cost can be billed),
 // falling back to the catalog item's Cost for older lines saved before this
@@ -2964,14 +2990,15 @@ function acctCashFlow(fromIso, toIso) {
 
 // ---- Rendering ----
 function renderAcctTabs() {
-  const tabs = [["expenses", "Expenses"], ["txns", "Capital / Loans / Assets"], ["opening", "Opening Balances"],
+  const tabs = [["expenses", "Record Expense"], ["txns", "Capital / Loans / Assets"], ["opening", "Opening Balances"],
     ["income", "Income Statement"], ["balance", "Balance Sheet"], ["cashflow", "Cash Flow"]];
   return '<div class="settings-tabs">' + tabs.map(([k, label]) =>
     '<button type="button" class="settings-tab' + (state.acctTab === k ? ' active' : '') + '" onclick="setAcctTab(\'' + k + '\')">' + esc(label) + '</button>'
   ).join('') + '</div>';
 }
 
-function renderExpensesTab() {
+// Just the entry form — lives under Accounting > Expenses.
+function renderExpenseFormTab() {
   if (!state.expenseDraft) state.expenseDraft = newBlankExpense();
   const e = state.expenseDraft;
   const cfg = expenseFieldConfig(e.category);
@@ -3011,15 +3038,34 @@ function renderExpensesTab() {
   } else {
     html += '<p class="settings-intro" style="margin-top:6px">Marked Unpaid — it\'ll show on the Income Statement as owed, but won\'t reduce Cash Flow until you switch it to Paid and choose how it was paid.</p>';
   }
-  html += '<button class="btn btn-primary" style="margin-top:16px" onclick="addExpense()">' + icon(isEdit ? "check" : "plusCircle", 15) + ' ' + (isEdit ? "Update expense" : "Save expense") + '</button></div>';
+  html += '<div style="display:flex;gap:10px;align-items:center;margin-top:16px">' +
+    '<button class="btn btn-primary" onclick="addExpense()">' + icon(isEdit ? "check" : "plusCircle", 15) + ' ' + (isEdit ? "Update expense" : "Save expense") + '</button>' +
+    '<button type="button" class="btn btn-ghost" onclick="goto_(\'expenses\')">' + icon("table", 15) + ' View all expenses</button>' +
+    '</div></div>';
+  return html;
+}
+window.renderExpenseFormTab = renderExpenseFormTab;
 
+// Top-level records page — mirrors the Invoices list: a table of every recorded
+// expense with Status (Paid/Unpaid), Edit and Delete, plus a button to jump into
+// the entry form under Accounting.
+function renderExpensesList() {
+  let html = '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:4px">' +
+    '<div class="settings-intro" style="margin:0">Raw materials, wages, rent, transport, and other overhead — recorded here, flowing straight into the Income Statement and Cash Flow.</div>' +
+    '<button class="btn btn-primary" onclick="newExpenseEntry()">' + icon("plusCircle", 15) + ' Record expense</button>' +
+    '</div>';
   if (state.expenses.length === 0) {
-    html += emptyState("No expenses recorded yet", "Log raw materials, wages, rent, transport, and other overhead here — they flow straight into the Income Statement and Cash Flow.", null, null);
+    html += emptyState("No expenses recorded yet", "Log raw materials, wages, rent, transport, and other overhead — they flow straight into the Income Statement and Cash Flow.", "Record an expense", "newExpenseEntry()");
     return html;
   }
   const total = state.expenses.reduce((s, e2) => s + (Number(e2.amount) || 0), 0);
-  const unpaidTotal = state.expenses.filter(e2 => e2.status === "unpaid").reduce((s, e2) => s + (Number(e2.amount) || 0), 0);
-  html += '<div style="margin-top:22px" class="section-title">All expenses <span style="font-weight:400;color:var(--charcoal-soft)">(' + state.expenses.length + ' · ' + fmt(total) + ' total' + (unpaidTotal > 0 ? ' · ' + fmt(unpaidTotal) + ' unpaid' : '') + ')</span></div>';
+  const unpaidList = state.expenses.filter(e2 => e2.status === "unpaid");
+  const unpaidTotal = unpaidList.reduce((s, e2) => s + (Number(e2.amount) || 0), 0);
+  if (unpaidList.length > 0) {
+    html += '<div class="danger-banner" style="margin-top:16px;align-items:flex-start">' + icon("alertTriangle", 16) +
+      '<span>' + unpaidList.length + ' expense' + (unpaidList.length === 1 ? '' : 's') + ' still unpaid, totalling ' + fmt(unpaidTotal) + '. Mark them Paid once settled — until then they\'re excluded from Cash Flow.</span></div>';
+  }
+  html += '<div style="margin-top:18px" class="section-title">All expenses <span style="font-weight:400;color:var(--charcoal-soft)">(' + state.expenses.length + ' · ' + fmt(total) + ' total' + (unpaidTotal > 0 ? ' · ' + fmt(unpaidTotal) + ' unpaid' : '') + ')</span></div>';
   html += '<div class="table-wrap" style="margin-top:10px"><div class="t-head cols-expenses">' +
     '<div>Date</div><div>Category</div><div>Description</div><div>Paid to</div><div>Added by</div><div>Payment</div><div>Status</div><div>Amount</div><div></div></div>';
   state.expenses.forEach(e2 => {
@@ -3043,6 +3089,7 @@ function renderExpensesTab() {
   html += '</div>';
   return html;
 }
+window.renderExpensesList = renderExpensesList;
 
 function renderTxnsTab() {
   if (!state.acctTxnDraft) state.acctTxnDraft = newBlankAcctTxn();
@@ -3170,11 +3217,13 @@ function renderBalanceSheetTab() {
   const inventory = acctInventoryAsOf(asOf);
   const ar = acctReceivablesAsOf(asOf);
   const loans = acctLoansAsOf(asOf);
+  const payables = acctPayablesAsOf(asOf);
   const capital = acctCapitalAsOf(asOf);
   const retained = acctIncomeStatement(addDaysISO(state.opening.asOfDate, 1), asOf).netProfit;
   const totalEquity = capital + retained;
   const totalAssets = cb.cash + cb.bank + ar + inventory + faNet;
-  const totalLiabEquity = totalEquity + loans;
+  const totalLiabilities = loans + payables;
+  const totalLiabEquity = totalEquity + totalLiabilities;
   const diff = Math.round((totalAssets - totalLiabEquity) * 100) / 100;
 
   let html = '<div class="card" style="margin-bottom:18px"><div class="section-title">As of</div>' +
@@ -3205,7 +3254,8 @@ function renderBalanceSheetTab() {
     '<div class="totals-row"><span class="lbl">Retained earnings</span><span>' + fmt(retained) + '</span></div>' +
     '<div class="totals-row" style="margin-top:4px"><span class="lbl">Total Equity</span><span>' + fmt(totalEquity) + '</span></div>' +
     '<div class="totals-row" style="margin-top:8px"><span class="lbl">Loans payable</span><span>' + fmt(loans) + '</span></div>' +
-    '<div class="totals-row"><span class="lbl">Total Liabilities</span><span>' + fmt(loans) + '</span></div>' +
+    '<div class="totals-row"><span class="lbl">Accounts payable (unpaid expenses)</span><span>' + fmt(payables) + '</span></div>' +
+    '<div class="totals-row"><span class="lbl">Total Liabilities</span><span>' + fmt(totalLiabilities) + '</span></div>' +
     '<div style="border-top:2px solid var(--charcoal);margin-top:8px;padding-top:6px"><div class="totals-row bold"><span class="lbl">Total Equity + Liabilities</span><span>' + fmt(totalLiabEquity) + '</span></div></div>' +
     '</div></div>';
   html += '</div>';
@@ -3260,8 +3310,8 @@ function renderCashFlowTab() {
 }
 
 function renderAccounting() {
-  const tabFns = { expenses: renderExpensesTab, txns: renderTxnsTab, opening: renderOpeningTab, income: renderIncomeStatementTab, balance: renderBalanceSheetTab, cashflow: renderCashFlowTab };
-  return renderAcctTabs() + (tabFns[state.acctTab] || renderExpensesTab)();
+  const tabFns = { expenses: renderExpenseFormTab, txns: renderTxnsTab, opening: renderOpeningTab, income: renderIncomeStatementTab, balance: renderBalanceSheetTab, cashflow: renderCashFlowTab };
+  return renderAcctTabs() + (tabFns[state.acctTab] || renderExpenseFormTab)();
 }
 
 // ---- CSV exports for the three statements ----
@@ -3279,13 +3329,14 @@ window.downloadIncomeStatementCSV = downloadIncomeStatementCSV;
 
 function downloadBalanceSheetCSV() {
   const asOf = state.balanceAsOf || todayISO();
-  const cb = acctCashBankAsOf(asOf), inventory = acctInventoryAsOf(asOf), ar = acctReceivablesAsOf(asOf), loans = acctLoansAsOf(asOf), capital = acctCapitalAsOf(asOf);
+  const cb = acctCashBankAsOf(asOf), inventory = acctInventoryAsOf(asOf), ar = acctReceivablesAsOf(asOf), loans = acctLoansAsOf(asOf), payables = acctPayablesAsOf(asOf), capital = acctCapitalAsOf(asOf);
   const poolBreakdown = acctFixedAssetsByPool(addDaysISO(state.opening.asOfDate, 1), asOf);
   const faGross = poolBreakdown.reduce((s, p) => s + p.gross, 0);
   const accDep = poolBreakdown.reduce((s, p) => s + p.dep, 0);
   const faNet = faGross - accDep;
   const retained = acctIncomeStatement(addDaysISO(state.opening.asOfDate, 1), asOf).netProfit;
   const totalEquity = capital + retained;
+  const totalLiabilities = loans + payables;
   const rows = [["Statement of Financial Position (Balance Sheet)", "As of " + asOf], [],
     ["Assets", ""], ["Cash in hand", cb.cash.toFixed(2)], ["Bank / Online balance", cb.bank.toFixed(2)], ["Accounts receivable", ar.toFixed(2)], ["Inventory (raw materials / stock)", inventory.toFixed(2)], []];
   rows.push(["Fixed assets by category (Nepal Income Tax Act, Schedule 2)", "Basis", "At cost", "Accumulated depreciation/amortization", "Net"]);
@@ -3293,8 +3344,8 @@ function downloadBalanceSheetCSV() {
   rows.push(["Fixed assets (net)", "", "", "", faNet.toFixed(2)], []);
   rows.push(["Total Assets", (cb.cash + cb.bank + ar + inventory + faNet).toFixed(2)], [],
     ["Equity & Liabilities", ""], ["Owner's capital", capital.toFixed(2)], ["Retained earnings", retained.toFixed(2)], ["Total Equity", totalEquity.toFixed(2)],
-    ["Loans payable", loans.toFixed(2)], ["Total Liabilities", loans.toFixed(2)],
-    ["Total Equity + Liabilities", (totalEquity + loans).toFixed(2)]);
+    ["Loans payable", loans.toFixed(2)], ["Accounts payable (unpaid expenses)", payables.toFixed(2)], ["Total Liabilities", totalLiabilities.toFixed(2)],
+    ["Total Equity + Liabilities", (totalEquity + totalLiabilities).toFixed(2)]);
   downloadCSVRows("balance-sheet-" + asOf + ".csv", rows);
   showToast("Balance Sheet CSV downloaded", "success");
 }
@@ -3610,7 +3661,7 @@ function render() {
       '<div style="font-size:9.5px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;margin-top:2px;color:' + (ro ? 'var(--amber)' : '#7DAF8F') + '">' + (ro ? 'Moderator · read-only settings' : 'Admin') + '</div>';
   }
   const pageFns = { dashboard: renderDashboard, list: renderList, clients: renderClients, clientDetail: renderClientDetail, settings: renderSettings, new: renderForm, edit: renderForm, view: renderView,
-    items: renderItems, itemNew: renderItemForm, itemEdit: renderItemForm, sales: renderSales, accounting: renderAccounting };
+    items: renderItems, itemNew: renderItemForm, itemEdit: renderItemForm, sales: renderSales, accounting: renderAccounting, expenses: renderExpensesList };
   document.getElementById("main-content").innerHTML = (pageFns[state.page] || renderDashboard)();
   if (state.page === "new" || state.page === "edit") { renderFormTotalsOnly(); if (formError) liveValidateClientName(); updateClientDueInfo(); updateSaveButtonState(); }
   if (state.page === "new" && autofocusClientName) {
