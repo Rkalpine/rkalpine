@@ -134,7 +134,7 @@
   .t-head, .t-row { display: grid; grid-template-columns: 1.1fr 1.6fr 1fr 1fr 0.9fr 130px; align-items: center; }
   .t-head.cols-purchases, .t-row.cols-purchases { grid-template-columns: 100px 1.6fr 60px 80px 90px 90px 90px 110px; }
   .t-head.cols-sales, .t-row.cols-sales { grid-template-columns: 2fr 1fr 1fr 1fr; }
-  .t-head.cols-expenses, .t-row.cols-expenses { grid-template-columns: 1fr 1.1fr 1.3fr 1fr 1fr 1fr 1fr 40px; }
+  .t-head.cols-expenses, .t-row.cols-expenses { grid-template-columns: 0.9fr 1.1fr 1.2fr 1fr 0.9fr 0.9fr 0.8fr 1fr 64px; }
   .t-head.cols-txns, .t-row.cols-txns { grid-template-columns: 1fr 1.6fr 2fr 1fr 1fr 40px; }
   .t-row { position: relative; transition: background 0.15s ease; border-left: 3px solid transparent; }
   .t-row::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
@@ -315,7 +315,7 @@
     font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif !important;
   }
   @media print {
-    @page { size: A5; margin: 10mm; }
+    @page { size: A4 landscape; margin: 5mm; }
     .no-print { display: none !important; }
     .invoice-doc { border: none !important; padding: 0 !important; box-shadow: none !important; max-width: 100% !important; }
     body { background: #fff !important; }
@@ -335,7 +335,7 @@
     .t-head, .t-row { grid-template-columns: 110px 140px 90px 90px 80px 120px; width: max-content; min-width: 100%; }
     .t-head.cols-purchases, .t-row.cols-purchases { grid-template-columns: 88px 150px 46px 70px 80px 80px 80px 96px; width: max-content; min-width: 100%; }
     .t-head.cols-sales, .t-row.cols-sales { grid-template-columns: 170px 90px 90px 100px; width: max-content; min-width: 100%; }
-    .t-head.cols-expenses, .t-row.cols-expenses { grid-template-columns: 90px 110px 150px 110px 90px 80px 90px 36px; width: max-content; min-width: 100%; }
+    .t-head.cols-expenses, .t-row.cols-expenses { grid-template-columns: 90px 110px 150px 110px 90px 80px 80px 90px 60px; width: max-content; min-width: 100%; }
     .t-head.cols-txns, .t-row.cols-txns { grid-template-columns: 90px 160px 180px 90px 90px 36px; width: max-content; min-width: 100%; }
     .settings-tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
     .settings-tabs::-webkit-scrollbar { display: none; }
@@ -527,8 +527,15 @@
 </div>
 <div class="modal-overlay" id="print-lang-modal">
   <div class="modal-card">
-    <div class="modal-title">Print in which language?</div>
+    <div class="modal-title">Print invoice</div>
     <div class="modal-body">Choose the language for the printed invoice. Item descriptions and "Issued by" will always stay in English.</div>
+    <div style="margin-top:12px">
+      <label class="field-label">Pair with a second invoice (optional)</label>
+      <select id="print-pair-select" class="field-input">
+        <option value="">— Print alone (second half blank) —</option>
+      </select>
+      <p class="settings-intro" style="margin-top:6px">Prints on one A4 sheet (landscape) at A5 size. Printing alone leaves the second half blank; pairing fills it with a second invoice.</p>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="cancelPrintLang()">Cancel</button>
       <button class="btn btn-ghost" lang="ne" onclick="confirmPrintLang('ne')">नेपाली</button>
@@ -861,12 +868,32 @@ function expenseCategoryLabel(k) {
   if (EXPENSE_CATEGORY_LEGACY_LABELS[k]) return EXPENSE_CATEGORY_LEGACY_LABELS[k];
   return "Other overhead";
 }
+// Each expense category gets its own "shape" of form: raw material purchases
+// are quantity × rate line items, everything else is a lump-sum payment to
+// someone — but who that someone *is* (and how the field is labelled) varies
+// by category, so the form reads naturally instead of always saying "Vendor".
+const EXPENSE_CATEGORY_FIELD_CONFIG = {
+  raw_materials: { qtyRate: true, payeeLabel: "Vendor / Supplier", payeePlaceholder: "Who you bought it from" },
+  wages: { qtyRate: false, payeeLabel: "Employee name", payeePlaceholder: "Who was paid" },
+  rent: { qtyRate: false, payeeLabel: "Landlord / rent receiver name", payeePlaceholder: "Who the rent was paid to" },
+  utilities: { qtyRate: false, payeeLabel: "Paid to", payeePlaceholder: "e.g. Nepal Electricity Authority" },
+  transport: { qtyRate: false, payeeLabel: "Paid to", payeePlaceholder: "Transporter / driver name" },
+  packaging: { qtyRate: false, payeeLabel: "Vendor / Supplier", payeePlaceholder: "Who you bought it from" },
+  repairs: { qtyRate: false, payeeLabel: "Paid to", payeePlaceholder: "Mechanic / contractor name" },
+  marketing: { qtyRate: false, payeeLabel: "Paid to", payeePlaceholder: "Agency / platform" },
+  communication: { qtyRate: false, payeeLabel: "Paid to", payeePlaceholder: "Service provider" },
+  insurance: { qtyRate: false, payeeLabel: "Paid to", payeePlaceholder: "Insurance company" },
+  bank_charges: { qtyRate: false, payeeLabel: "Paid to", payeePlaceholder: "Bank name" },
+  professional_fees: { qtyRate: false, payeeLabel: "Paid to", payeePlaceholder: "Lawyer / auditor name" },
+  other: { qtyRate: false, payeeLabel: "Paid to", payeePlaceholder: "Who was paid" },
+};
+function expenseFieldConfig(cat) { return EXPENSE_CATEGORY_FIELD_CONFIG[cat] || EXPENSE_CATEGORY_FIELD_CONFIG.other; }
 
 function dbExpenseToApp(row) {
-  return { id: row.id, date: row.date, category: row.category || "other", description: row.description || "", qty: row.qty == null ? 1 : Number(row.qty), rate: Number(row.rate) || 0, amount: Number(row.amount) || 0, paymentMethod: row.payment_method || "cash", vendorName: row.vendor_name || "", createdBy: row.created_by_name || "" };
+  return { id: row.id, date: row.date, category: row.category || "other", description: row.description || "", qty: row.qty == null ? 1 : Number(row.qty), rate: Number(row.rate) || 0, amount: Number(row.amount) || 0, paymentMethod: row.payment_method || "cash", vendorName: row.vendor_name || "", status: row.status === "unpaid" ? "unpaid" : "paid", createdBy: row.created_by_name || "" };
 }
 function appExpenseToDbRow(e) {
-  return { id: e.id, date: e.date, category: e.category || "other", description: e.description || "", qty: e.qty == null ? 1 : Number(e.qty), rate: Number(e.rate) || 0, amount: Number(e.amount) || 0, payment_method: e.paymentMethod || "cash", vendor_name: e.vendorName || "", created_by: state.currentAdmin ? state.currentAdmin.id : null, created_by_name: e.createdBy || (state.currentAdmin ? state.currentAdmin.name : "") };
+  return { id: e.id, date: e.date, category: e.category || "other", description: e.description || "", qty: e.qty == null ? 1 : Number(e.qty), rate: Number(e.rate) || 0, amount: Number(e.amount) || 0, payment_method: e.paymentMethod || "cash", vendor_name: e.vendorName || "", status: e.status === "unpaid" ? "unpaid" : "paid", created_by: state.currentAdmin ? state.currentAdmin.id : null, created_by_name: e.createdBy || (state.currentAdmin ? state.currentAdmin.name : "") };
 }
 async function fetchExpenses() {
   const { data, error } = await sb.from("expenses").select("*").order("date", { ascending: false });
@@ -1131,6 +1158,7 @@ const state = {
   opening: Object.assign({}, defaultOpening),
   openingDraft: null,
   expenseDraft: null,
+  editingExpenseId: null,
   acctTxnDraft: null,
   acctTab: "expenses",
   acctFrom: fiscalQuarterBounds().from,
@@ -1594,10 +1622,11 @@ function getKnownClientNames() {
   });
   return names.sort((a, b) => a.localeCompare(b));
 }
-function getKnownVendorNames() {
+function getKnownVendorNames(category) {
   const seen = {};
   const names = [];
   state.expenses.forEach(e => {
+    if (category && e.category !== category) return;
     const key = normName(e.vendorName);
     if (key && !seen[key]) { seen[key] = true; names.push(e.vendorName); }
   });
@@ -1862,6 +1891,14 @@ async function confirmResetUser() {
 window.confirmResetUser = confirmResetUser;
 
 function doPrint() {
+  const inv = state.invoices.find(i => i.id === state.activeId);
+  const sel = document.getElementById("print-pair-select");
+  if (sel) {
+    const others = state.invoices.filter(i => i.id !== state.activeId).slice().sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+    sel.innerHTML = '<option value="">— Print alone (second half blank) —</option>' +
+      others.map(i => '<option value="' + i.id + '">' + esc(i.number) + ' — ' + esc(i.clientName || "—") + '</option>').join('');
+    sel.value = "";
+  }
   document.getElementById("print-lang-modal").classList.add("show");
 }
 function cancelPrintLang() {
@@ -1871,6 +1908,9 @@ function confirmPrintLang(lang) {
   document.getElementById("print-lang-modal").classList.remove("show");
   const inv = state.invoices.find(i => i.id === state.activeId);
   if (!inv) return;
+  const pairSel = document.getElementById("print-pair-select");
+  const pairId = pairSel ? pairSel.value : "";
+  const pairInv = pairId ? state.invoices.find(i => i.id === pairId) : null;
 
   // Print from a dedicated hidden iframe containing ONLY the invoice doc, rather than
   // toggling visibility on the main page. Some mobile "Save as PDF" flows don't reliably
@@ -1878,6 +1918,7 @@ function confirmPrintLang(lang) {
   // and guaranteed correct regardless of the device's print pipeline.
   const appStyle = document.querySelector("style");
   const docHtml = buildInvoiceDocHTML(inv, lang);
+  const docHtml2 = pairInv ? buildInvoiceDocHTML(pairInv, lang) : "";
 
   const iframe = document.createElement("iframe");
   iframe.style.position = "fixed";
@@ -1890,31 +1931,37 @@ function confirmPrintLang(lang) {
 
   const idoc = iframe.contentDocument || iframe.contentWindow.document;
   idoc.open();
+  // Always the same A4-landscape sheet holding two A5-sized columns, cut line down the
+  // middle: printing alone just leaves the second column blank (rather than switching to
+  // a different page format), so the physical output is consistent either way.
   idoc.write(
     "<!DOCTYPE html><html lang=\"" + (lang === "ne" ? "ne" : "en") + "\"><head><meta charset=\"UTF-8\">" +
-    "<title>" + esc(inv.number || "Invoice") + "</title>" +
+    "<title>" + esc(inv.number || "Invoice") + (pairInv ? " + " + esc(pairInv.number || "Invoice") : "") + "</title>" +
     "<style>" + (appStyle ? appStyle.innerHTML : "") +
-    "@page { size: A5; margin: 10mm; }" +
-    "html,body{margin:0;padding:0;background:#fff;}" +
+    "@page { size: A4 landscape; margin: 5mm; }" +
+    "html,body{margin:0;padding:0;background:#fff;height:100%;}" +
     "body{padding:0;font-size:12px;}" +
+    ".print-sheet{display:flex;width:100%;min-height:100%;}" +
+    ".print-copy{width:50%;box-sizing:border-box;padding:4mm 6mm;}" +
+    ".print-copy:first-child{border-right:1px dashed #aaa;}" +
     ".invoice-doc{max-width:100%;width:100%;margin:0;border:none !important;padding:0 !important;box-shadow:none !important;}" +
     ".invoice-doc::before{display:none;}" +
-    ".invoice-logo{width:88px;}" +
-    ".invoice-company{font-size:15px;}" +
-    ".invoice-company-meta{font-size:10.5px;}" +
-    ".invoice-tag{font-size:20px;}" +
-    ".invoice-num{font-size:11px;}" +
-    ".invoice-dates{font-size:10.5px;}" +
-    ".bill-to-name{font-size:13px;}" +
-    ".bill-to-meta{font-size:10.5px;}" +
-    "table.doc-table th{padding:6px 7px;font-size:9.5px;}" +
-    "table.doc-table td{padding:7px 7px;font-size:11px;}" +
-    ".totals-row{font-size:11px;}" +
-    ".totals-row.bold{font-size:12.5px;}" +
-    ".doc-notes-body{font-size:10.5px;}" +
+    ".invoice-logo{width:80px;}" +
+    ".invoice-company{font-size:14px;}" +
+    ".invoice-company-meta{font-size:9.5px;}" +
+    ".invoice-tag{font-size:18px;}" +
+    ".invoice-num{font-size:10px;}" +
+    ".invoice-dates{font-size:9.5px;}" +
+    ".bill-to-name{font-size:12px;}" +
+    ".bill-to-meta{font-size:9.5px;}" +
+    "table.doc-table th{padding:5px 6px;font-size:8.5px;}" +
+    "table.doc-table td{padding:6px 6px;font-size:10px;}" +
+    ".totals-row{font-size:10px;}" +
+    ".totals-row.bold{font-size:11.5px;}" +
+    ".doc-notes-body{font-size:9.5px;}" +
     "@media print { html,body{-webkit-print-color-adjust:exact;print-color-adjust:exact;} }" +
     "</style>" +
-    "</head><body>" + docHtml + "</body></html>"
+    "</head><body><div class=\"print-sheet\"><div class=\"print-copy\">" + docHtml + "</div><div class=\"print-copy\">" + docHtml2 + "</div></div></body></html>"
   );
   idoc.close();
 
@@ -2341,10 +2388,10 @@ window.downloadSalesCSV = downloadSalesCSV;
 // Exports one row per expense that has a Vendor / Supplier named — the
 // purchase-side counterpart to Download all sales.
 function downloadPurchasesCSV() {
-  const cols = ["Date", "Vendor / Supplier", "Category", "Description", "Payment Method", "Amount", "Added By"];
+  const cols = ["Date", "Vendor / Supplier", "Category", "Description", "Payment Method", "Status", "Amount", "Added By"];
   const rows = [cols];
   state.expenses.filter(e => (e.vendorName || "").trim()).slice().sort((a, b) => new Date(a.date) - new Date(b.date)).forEach(e => {
-    rows.push([e.date, e.vendorName || "", expenseCategoryLabel(e.category), e.description || "", (e.paymentMethod === "online" ? "Online" : "Cash"), (Number(e.amount) || 0).toFixed(2), e.createdBy || ""]);
+    rows.push([e.date, e.vendorName || "", expenseCategoryLabel(e.category), e.description || "", (e.paymentMethod === "online" ? "Online" : "Cash"), (e.status === "unpaid" ? "Unpaid" : "Paid"), (Number(e.amount) || 0).toFixed(2), e.createdBy || ""]);
   });
   downloadCSVRows("purchases-" + todayISO() + ".csv", rows);
   showToast("Purchases CSV downloaded", "success");
@@ -2550,7 +2597,7 @@ function renderSales() {
 // any later date, or a P&L / cash flow for any date range. Movements dated
 // on/before the opening date are assumed already folded into it.
 
-function newBlankExpense() { return { id: uid(), date: todayISO(), category: "other", description: "", qty: 1, rate: 0, amount: 0, paymentMethod: "cash", vendorName: "" }; }
+function newBlankExpense() { return { id: uid(), date: todayISO(), category: "other", description: "", qty: 1, rate: 0, amount: 0, paymentMethod: "cash", vendorName: "", status: "paid" }; }
 function newBlankAcctTxn() { return { id: uid(), date: todayISO(), type: "capital_in", amount: 0, paymentMethod: "cash", poolCategory: "poolD", description: "" }; }
 
 function updateExpenseDraftField(field, value) { state.expenseDraft[field] = value; }
@@ -2574,26 +2621,55 @@ function setExpenseDraftCategory(cat) { state.expenseDraft.category = cat; rende
 window.setExpenseDraftCategory = setExpenseDraftCategory;
 function setExpenseDraftPaymentMethod(pm) { state.expenseDraft.paymentMethod = pm; render(); }
 window.setExpenseDraftPaymentMethod = setExpenseDraftPaymentMethod;
+function setExpenseDraftStatus(s) { state.expenseDraft.status = s; render(); }
+window.setExpenseDraftStatus = setExpenseDraftStatus;
 async function addExpense() {
   const e = state.expenseDraft;
+  const cfg = expenseFieldConfig(e.category);
   if (!e.date) { showToast("Pick a date", "error"); return; }
   if (!(Number(e.amount) > 0)) { showToast("Enter an amount greater than zero", "error"); return; }
-  if (!(e.vendorName || "").trim()) { showToast("Enter a Vendor / Supplier", "error"); return; }
+  if (!(e.vendorName || "").trim()) { showToast("Enter " + cfg.payeeLabel, "error"); return; }
+  const isEdit = !!state.editingExpenseId;
   try {
     await saveExpenseToDb(e);
-    state.expenses.unshift(dbExpenseToApp(appExpenseToDbRow(e)));
+    const saved = dbExpenseToApp(appExpenseToDbRow(e));
+    if (isEdit) {
+      state.expenses = state.expenses.map(x => x.id === saved.id ? saved : x);
+    } else {
+      state.expenses.unshift(saved);
+    }
     state.expenses.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
     state.expenseDraft = newBlankExpense();
+    state.editingExpenseId = null;
     render();
-    showToast("Expense recorded", "success");
-  } catch (err) { console.error(err); showToast("Couldn't save the expense — try again", "error"); }
+    showToast(isEdit ? "Expense updated" : "Expense recorded", "success");
+  } catch (err) { console.error(err); showToast("Couldn't save the expense: " + (err && err.message ? err.message : "try again"), "error"); }
 }
 window.addExpense = addExpense;
+// Loads an existing expense into the form above the table for editing.
+// Saving calls the same addExpense() — it upserts, so it updates in place.
+function editExpense(id) {
+  const e = state.expenses.find(x => x.id === id);
+  if (!e) return;
+  state.expenseDraft = Object.assign({}, e);
+  state.editingExpenseId = id;
+  render();
+  const card = document.querySelector(".form-card");
+  if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+window.editExpense = editExpense;
+function cancelEditExpense() {
+  state.expenseDraft = newBlankExpense();
+  state.editingExpenseId = null;
+  render();
+}
+window.cancelEditExpense = cancelEditExpense;
 async function deleteExpense(id) {
   if (!confirm("Delete this expense? This can't be undone.")) return;
   try {
     await deleteExpenseFromDb(id);
     state.expenses = state.expenses.filter(e => e.id !== id);
+    if (state.editingExpenseId === id) { state.expenseDraft = newBlankExpense(); state.editingExpenseId = null; }
     render();
   } catch (err) { console.error(err); showToast("Couldn't delete the expense — try again", "error"); }
 }
@@ -2870,7 +2946,7 @@ function acctCashFlow(fromIso, toIso) {
   const inRange = d => (!from || d >= from) && (!to || d <= to);
   let cashFromCustomers = 0, cashForExpenses = 0;
   state.invoices.filter(inv => inRange(new Date(inv.date))).forEach(inv => { cashFromCustomers += Number(inv.amountPaid) || 0; });
-  state.expenses.filter(e => inRange(new Date(e.date))).forEach(e => { cashForExpenses += Number(e.amount) || 0; });
+  state.expenses.filter(e => inRange(new Date(e.date)) && e.status !== "unpaid").forEach(e => { cashForExpenses += Number(e.amount) || 0; });
   const operating = cashFromCustomers - cashForExpenses;
   let investing = 0, financing = 0;
   const lines = { assetPurchase: 0, assetDisposal: 0, capitalIn: 0, drawing: 0, loanIn: 0, loanRepay: 0 };
@@ -2898,45 +2974,70 @@ function renderAcctTabs() {
 function renderExpensesTab() {
   if (!state.expenseDraft) state.expenseDraft = newBlankExpense();
   const e = state.expenseDraft;
-  let html = '<div class="form-card" style="max-width:640px"><div class="section-title">Record an expense</div>';
+  const cfg = expenseFieldConfig(e.category);
+  const isEdit = !!state.editingExpenseId;
+  let html = '<div class="form-card" style="max-width:640px">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">' +
+    '<div class="section-title">' + (isEdit ? "Edit expense" : "Record an expense") + '</div>' +
+    (isEdit ? '<button type="button" class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="cancelEditExpense()">Cancel edit</button>' : '') +
+    '</div>';
+  if (isEdit) html += '<div class="readonly-banner" style="margin-top:10px">' + icon("pencil", 14) + ' Editing an existing expense — saving will update it in place.</div>';
   html += '<label class="field-label" style="display:block;margin-top:6px">Category</label><div class="vat-toggle" style="flex-wrap:wrap;margin-top:6px">' +
     EXPENSE_CATEGORIES.map(([k, label]) => '<button type="button" class="vat-btn' + (e.category === k ? ' active' : '') + '" onclick="setExpenseDraftCategory(\'' + k + '\')">' + esc(label) + '</button>').join('') + '</div>';
   if (e.category === "raw_materials") html += '<p class="settings-intro" style="margin-top:6px">Raw material purchases add to Inventory rather than reducing profit immediately — they flow into Cost of Goods Sold (and reduce profit) only as items are sold, based on each catalog item\'s Cost. Naming a Vendor below lists them under Suppliers on the Clients page.</p>';
   html += '<div class="form-grid" style="margin-top:14px">' +
     '<div><label class="field-label">Date</label><input type="date" class="field-input" value="' + esc(e.date) + '" oninput="updateExpenseDraftField(\'date\',this.value)"/></div>' +
-    '<div class="span2"><label class="field-label">Description</label><input class="field-input" placeholder="e.g. Raw tea leaves" value="' + esc(e.description) + '" oninput="updateExpenseDraftField(\'description\',this.value)"/></div>' +
-    '<div><label class="field-label">Quantity</label><input type="number" class="field-input" value="' + (e.qty || 0) + '" oninput="updateExpenseQtyRate(\'qty\',this.value)"/></div>' +
-    '<div><label class="field-label">Rate (per unit)</label><input type="number" class="field-input" value="' + (e.rate || 0) + '" oninput="updateExpenseQtyRate(\'rate\',this.value)"/></div>' +
-    '<div><label class="field-label">Amount</label><input type="number" class="field-input" id="exp-amount" value="' + (e.amount || 0) + '" oninput="updateExpenseDraftField(\'amount\',this.value)"/></div>' +
-    '<div><label class="field-label">Vendor / Supplier</label><input class="field-input" list="vendor-names" placeholder="Who you bought it from" value="' + esc(e.vendorName) + '" oninput="updateExpenseDraftField(\'vendorName\',this.value)"/>' +
-    '<datalist id="vendor-names">' + getKnownVendorNames().map(n => '<option value="' + esc(n) + '"></option>').join('') + '</datalist></div>' +
+    '<div class="span2"><label class="field-label">Description</label><input class="field-input" placeholder="e.g. Raw tea leaves" value="' + esc(e.description) + '" oninput="updateExpenseDraftField(\'description\',this.value)"/></div>';
+  if (cfg.qtyRate) {
+    html += '<div><label class="field-label">Quantity</label><input type="number" class="field-input" value="' + (e.qty || 0) + '" oninput="updateExpenseQtyRate(\'qty\',this.value)"/></div>' +
+      '<div><label class="field-label">Rate (per unit)</label><input type="number" class="field-input" value="' + (e.rate || 0) + '" oninput="updateExpenseQtyRate(\'rate\',this.value)"/></div>' +
+      '<div><label class="field-label">Amount</label><input type="number" class="field-input" id="exp-amount" value="' + (e.amount || 0) + '" oninput="updateExpenseDraftField(\'amount\',this.value)"/></div>';
+  } else {
+    html += '<div><label class="field-label">Amount</label><input type="number" class="field-input" id="exp-amount" value="' + (e.amount || 0) + '" oninput="updateExpenseDraftField(\'amount\',this.value)"/></div>';
+  }
+  html += '<div><label class="field-label">' + esc(cfg.payeeLabel) + '</label><input class="field-input" list="vendor-names" placeholder="' + esc(cfg.payeePlaceholder) + '" value="' + esc(e.vendorName) + '" oninput="updateExpenseDraftField(\'vendorName\',this.value)"/>' +
+    '<datalist id="vendor-names">' + getKnownVendorNames(e.category).map(n => '<option value="' + esc(n) + '"></option>').join('') + '</datalist></div>' +
     '<div><label class="field-label">Added by</label><div class="readonly-field">' + esc(state.currentAdmin ? state.currentAdmin.name : "—") + '</div></div>' +
     '</div>';
-  html += '<p class="settings-intro" style="margin-top:-6px">Enter a Quantity and Rate to have Amount calculated automatically (e.g. 50 kg × Rs 120) — or leave Quantity at 1 and type Amount directly for a lump-sum expense like rent.</p>';
-  html += '<label class="field-label" style="margin-top:14px;display:block">Payment method</label><div class="vat-toggle">' +
-    '<button type="button" class="vat-btn' + ((e.paymentMethod || "cash") === "cash" ? ' active' : '') + '" onclick="setExpenseDraftPaymentMethod(\'cash\')">Cash</button>' +
-    '<button type="button" class="vat-btn' + (e.paymentMethod === "online" ? ' active' : '') + '" onclick="setExpenseDraftPaymentMethod(\'online\')">Bank / Online</button></div>';
-  html += '<button class="btn btn-primary" style="margin-top:16px" onclick="addExpense()">' + icon("plusCircle", 15) + ' Save expense</button></div>';
+  if (cfg.qtyRate) html += '<p class="settings-intro" style="margin-top:-6px">Enter a Quantity and Rate to have Amount calculated automatically (e.g. 50 kg × Rs 120).</p>';
+  html += '<label class="field-label" style="margin-top:14px;display:block">Status</label><div class="vat-toggle">' +
+    '<button type="button" class="vat-btn' + ((e.status || "paid") === "paid" ? ' active' : '') + '" onclick="setExpenseDraftStatus(\'paid\')">' + icon("check", 13) + ' Paid</button>' +
+    '<button type="button" class="vat-btn' + (e.status === "unpaid" ? ' active' : '') + '" onclick="setExpenseDraftStatus(\'unpaid\')">' + icon("alertTriangle", 13) + ' Unpaid</button></div>';
+  if ((e.status || "paid") === "paid") {
+    html += '<label class="field-label" style="margin-top:14px;display:block">Payment method</label><div class="vat-toggle">' +
+      '<button type="button" class="vat-btn' + ((e.paymentMethod || "cash") === "cash" ? ' active' : '') + '" onclick="setExpenseDraftPaymentMethod(\'cash\')">Cash</button>' +
+      '<button type="button" class="vat-btn' + (e.paymentMethod === "online" ? ' active' : '') + '" onclick="setExpenseDraftPaymentMethod(\'online\')">Bank / Online</button></div>';
+    html += '<p class="settings-intro" style="margin-top:6px">Unpaid expenses still show up on the Income Statement (they\'re owed either way) but are excluded from Cash Flow until you mark them Paid.</p>';
+  } else {
+    html += '<p class="settings-intro" style="margin-top:6px">Marked Unpaid — it\'ll show on the Income Statement as owed, but won\'t reduce Cash Flow until you switch it to Paid and choose how it was paid.</p>';
+  }
+  html += '<button class="btn btn-primary" style="margin-top:16px" onclick="addExpense()">' + icon(isEdit ? "check" : "plusCircle", 15) + ' ' + (isEdit ? "Update expense" : "Save expense") + '</button></div>';
 
   if (state.expenses.length === 0) {
     html += emptyState("No expenses recorded yet", "Log raw materials, wages, rent, transport, and other overhead here — they flow straight into the Income Statement and Cash Flow.", null, null);
     return html;
   }
   const total = state.expenses.reduce((s, e2) => s + (Number(e2.amount) || 0), 0);
-  html += '<div style="margin-top:22px" class="section-title">All expenses <span style="font-weight:400;color:var(--charcoal-soft)">(' + state.expenses.length + ' · ' + fmt(total) + ' total)</span></div>';
+  const unpaidTotal = state.expenses.filter(e2 => e2.status === "unpaid").reduce((s, e2) => s + (Number(e2.amount) || 0), 0);
+  html += '<div style="margin-top:22px" class="section-title">All expenses <span style="font-weight:400;color:var(--charcoal-soft)">(' + state.expenses.length + ' · ' + fmt(total) + ' total' + (unpaidTotal > 0 ? ' · ' + fmt(unpaidTotal) + ' unpaid' : '') + ')</span></div>';
   html += '<div class="table-wrap" style="margin-top:10px"><div class="t-head cols-expenses">' +
-    '<div>Date</div><div>Category</div><div>Description</div><div>Vendor</div><div>Added by</div><div>Payment</div><div>Amount</div><div></div></div>';
+    '<div>Date</div><div>Category</div><div>Description</div><div>Paid to</div><div>Added by</div><div>Payment</div><div>Status</div><div>Amount</div><div></div></div>';
   state.expenses.forEach(e2 => {
     const qtyRateNote = (Number(e2.qty) > 0 && Number(e2.rate) > 0) ? (e2.qty + ' × ' + fmt(e2.rate)) : "";
-    html += '<div class="t-row cols-expenses">' +
+    const isUnpaid = e2.status === "unpaid";
+    html += '<div class="t-row cols-expenses ' + (isUnpaid ? "row-unpaid" : "row-paid") + '">' +
       '<div>' + esc(e2.date) + '</div>' +
       '<div>' + esc(expenseCategoryLabel(e2.category)) + '</div>' +
       '<div class="t-client">' + esc(e2.description || "—") + '</div>' +
       '<div class="t-client">' + esc(e2.vendorName || "—") + '</div>' +
       '<div>' + esc(e2.createdBy || "—") + '</div>' +
-      '<div>' + (e2.paymentMethod === "online" ? "Online" : "Cash") + '</div>' +
+      '<div>' + (isUnpaid ? "—" : (e2.paymentMethod === "online" ? "Online" : "Cash")) + '</div>' +
+      '<div><span class="pill ' + (isUnpaid ? "unpaid" : "paid") + '"><span class="dot ' + (isUnpaid ? "unpaid" : "paid") + '"></span>' + (isUnpaid ? "Unpaid" : "Paid") + '</span></div>' +
       '<div class="t-amt">' + fmt(e2.amount) + (qtyRateNote ? '<div style="font-size:10.5px;font-weight:400;color:var(--charcoal-soft)">' + esc(qtyRateNote) + '</div>' : '') + '</div>' +
-      '<div><button class="btn-icon" onclick="deleteExpense(\'' + e2.id + '\')" title="Delete">' + icon("trash", 13) + '</button></div>' +
+      '<div style="display:flex;gap:4px">' +
+      '<button class="btn-icon" onclick="editExpense(\'' + e2.id + '\')" title="Edit">' + icon("pencil", 13) + '</button>' +
+      '<button class="btn-icon" onclick="deleteExpense(\'' + e2.id + '\')" title="Delete">' + icon("trash", 13) + '</button>' +
+      '</div>' +
       '</div>';
   });
   html += '</div>';
@@ -3309,11 +3410,13 @@ function renderForm() {
     '<div class="totals-divider" id="totals-content"></div>' +
     '<div style="margin-top:10px"><label class="field-label">Amount Paid</label>' +
     '<input type="number" class="field-input" id="in-amountPaid" value="' + (inv.amountPaid || 0) + '" oninput="updateDraftField(\'amountPaid\',this.value); renderFormTotalsOnly(); liveValidateAmountPaid();"/><div class="field-error" id="err-amountPaid"></div></div>' +
-    '<label class="field-label" style="margin-top:14px">Payment method</label>' +
-    '<div class="vat-toggle">' +
-    '<button type="button" class="vat-btn ' + ((inv.paymentMethod || "cash") === "cash" ? "active" : "") + '" onclick="setDraftPaymentMethod(\'cash\')" title="Paid in cash">Cash</button>' +
-    '<button type="button" class="vat-btn ' + (inv.paymentMethod === "online" ? "active" : "") + '" onclick="setDraftPaymentMethod(\'online\')" title="Paid online / bank transfer">Bank / Online</button>' +
-    '</div>' +
+    (inv.status === "paid" ?
+      ('<label class="field-label" style="margin-top:14px">Payment method</label>' +
+      '<div class="vat-toggle">' +
+      '<button type="button" class="vat-btn ' + ((inv.paymentMethod || "cash") === "cash" ? "active" : "") + '" onclick="setDraftPaymentMethod(\'cash\')" title="Paid in cash">Cash</button>' +
+      '<button type="button" class="vat-btn ' + (inv.paymentMethod === "online" ? "active" : "") + '" onclick="setDraftPaymentMethod(\'online\')" title="Paid online / bank transfer">Bank / Online</button>' +
+      '</div>')
+      : '<p class="settings-intro" style="margin-top:10px">Mark this invoice Paid to record whether it was settled in cash or by bank/online.</p>') +
     '</div></div>';
 
   html += '<div class="form-footer"><button class="btn btn-ghost" onclick="' + (state.invoices.some(i => i.id === inv.id) ? "goto_('view','" + inv.id + "')" : "goto_('list')") + '">Cancel</button>' +
@@ -3376,7 +3479,7 @@ function buildInvoiceDocHTML(inv, lang) {
     html += '<div class="totals-row bold" style="color:var(--green)"><span class="lbl">' + L.returnAmt + '</span><span>' + money(t.returnAmt) + '</span></div>';
   }
   html += '</div></div>';
-  html += '<div style="margin-top:6px;font-size:12.5px;color:var(--charcoal-soft)"><span style="font-weight:600;color:var(--charcoal)">' + L.paymentMethodLbl + ' </span>' + (t.paymentMethod === "online" ? L.online : L.cash) + '</div>';
+  if (inv.status === "paid") html += '<div style="margin-top:6px;font-size:12.5px;color:var(--charcoal-soft)"><span style="font-weight:600;color:var(--charcoal)">' + L.paymentMethodLbl + ' </span>' + (t.paymentMethod === "online" ? L.online : L.cash) + '</div>';
 
   html += '<div style="margin-top:14px;padding-top:10px;border-top:1px dashed var(--line);font-size:12px;color:var(--charcoal-soft)">' +
     '<span style="font-weight:600;color:var(--charcoal)">' + L.inWords + ' </span>' + esc(isNe ? numberToWordsNepali(t.total) : numberToWords(t.total)) + '</div>';
